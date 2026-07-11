@@ -38,8 +38,11 @@ export default function Home() {
           </div>
 
           <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-slate-400">Savings</h2>
-            <p className="text-3xl font-bold mt-2">£0</p>
+            <h2 className="text-slate-400">Today's Wealth</h2>
+            <p className="text-3xl font-bold mt-2">£23.14</p>
+            <p className="text-sm text-emerald-400 mt-2">
+  While you were sleeping...
+</p>
           </div>
 
           <div className="bg-slate-900 rounded-xl p-6">
