@@ -1,4 +1,10 @@
+"use client";
+
+import { useState } from "react";
+
 export default function Home() {
+  const [pension, setPension] = useState(118000);
+
   return (
     <main className="min-h-screen bg-slate-950 text-white p-10">
       <div className="max-w-5xl mx-auto">
@@ -24,8 +30,17 @@ export default function Home() {
 
           <div className="bg-slate-900 rounded-xl p-6">
             <h2 className="text-slate-400">Pensions</h2>
-            <p className="text-3xl font-bold mt-2">£118,000</p>
-          </div>
+            <p className="text-3xl font-bold mt-2">
+  £{pension.toLocaleString()}
+</p>
+<input
+  type="number"
+  value={pension}
+  onChange={(event) => setPension(Number(event.target.value))}
+  className="mt-4 w-full rounded-lg bg-slate-800 px-3 py-2 text-white outline-none"
+  aria-label="Pension value"
+/> 
+</div>
 
           <div className="bg-slate-900 rounded-xl p-6">
             <h2 className="text-slate-400">Investments</h2>
@@ -34,7 +49,7 @@ export default function Home() {
 
           <div className="bg-slate-900 rounded-xl p-6">
             <h2 className="text-slate-400">Property</h2>
-            <p className="text-3xl font-bold mt-2">£400,000</p>
+            <p className="text-3xl font-bold mt-2">£0</p>
           </div>
 
           <div className="bg-slate-900 rounded-xl p-6">
