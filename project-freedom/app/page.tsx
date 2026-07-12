@@ -34,7 +34,7 @@ export default function Home() {
 
           <div className="bg-slate-900 rounded-xl p-6">
             <h2 className="text-slate-400">Property</h2>
-            <p className="text-3xl font-bold mt-2">£0</p>
+            <p className="text-3xl font-bold mt-2">£400,000</p>
           </div>
 
           <div className="bg-slate-900 rounded-xl p-6">
