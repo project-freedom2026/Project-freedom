@@ -1,73 +1,322 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+type FinancialData = {
+  pension: number;
+  investments: number;
+  property: number;
+  cash: number;
+  debts: number;
+  freedomNumber: number;
+  annualReturn: number;
+};
+
+const startingData: FinancialData = {
+  pension: 118000,
+  investments: 6000,
+  property: 400000,
+  cash: 0,
+  debts: 0,
+  freedomNumber: 1000000,
+  annualReturn: 7,
+};
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  }).format(value);
 
 export default function Home() {
-  const [pension, setPension] = useState(118000);
+  const [data, setData] = useState<FinancialData>(startingData);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  useEffect(() => {
+    const savedData = localStorage.getItem("project-freedom-data");
+
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData) as Partial<FinancialData>;
+
+        setData((currentData) => ({
+          ...currentData,
+          ...parsedData,
+        }));
+      } catch {
+        console.error("Project Freedom data could not be loaded.");
+      }
+    }
+
+    setHasLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (hasLoaded) {
+      localStorage.setItem("project-freedom-data", JSON.stringify(data));
+    }
+  }, [data, hasLoaded]);
+
+  const updateValue = (field: keyof FinancialData, value: number) => {
+    setData((currentData) => ({
+      ...currentData,
+      [field]: Number.isFinite(value) ? value : 0,
+    }));
+  };
+
+  const netWorth =
+    data.pension +
+    data.investments +
+    data.property +
+    data.cash -
+    data.debts;
+
+  const investableWealth =
+    data.pension + data.investments + data.cash - data.debts;
+
+  const freedomProgress =
+    data.freedomNumber > 0
+      ? Math.round((netWorth / data.freedomNumber) * 100)
+      : 0;
+
+  const progressBarWidth = Math.min(Math.max(freedomProgress, 0), 100);
+
+  const estimatedDailyGrowth =
+    ((data.pension + data.investments + data.cash) *
+      (data.annualReturn / 100)) /
+    365;
+
+  const amountRemaining = Math.max(data.freedomNumber - netWorth, 0);
+
+  const motivationalMessage =
+    freedomProgress >= 100
+      ? "You have reached your Freedom Number."
+      : freedomProgress >= 75
+        ? "Freedom is firmly in sight."
+        : freedomProgress >= 50
+          ? "You have already built a powerful financial foundation."
+          : freedomProgress >= 25
+            ? "Momentum is building. Keep moving forward."
+            : "Every contribution moves you closer to freedom.";
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-10">
-      <div className="max-w-5xl mx-auto">
+    <main className="min-h-screen bg-slate-950 px-5 py-10 text-white md:px-10">
+      <div className="mx-auto max-w-6xl">
+        <header>
+          <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">
+            Project Freedom
+          </p>
 
-        <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">
-          Project Freedom
-        </p>
+          <h1 className="mt-4 text-4xl font-bold md:text-5xl">
+            Welcome Andrew 👋
+          </h1>
 
-        <h1 className="text-5xl font-bold mt-4">
-          Welcome Andrew 👋
-        </h1>
+          <p className="mt-3 text-slate-400">
+            Make your progress visible. Make work optional.
+          </p>
+        </header>
 
-        <p className="text-slate-400 mt-3">
-          Your journey to financial independence starts here.
-        </p>
+        <section className="mt-10 rounded-2xl border border-cyan-500/20 bg-slate-900 p-6 md:p-8">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <p className="text-sm text-slate-400">Freedom Progress</p>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6 mt-12">
+              <p className="mt-1 text-5xl font-bold text-cyan-400">
+                {freedomProgress}%
+              </p>
 
-          <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-slate-400">Net Worth</h2>
-            <p className="text-3xl font-bold mt-2">£518,000</p>
+              <p className="mt-3 text-slate-300">{motivationalMessage}</p>
+            </div>
+
+            <div className="md:text-right">
+              <p className="text-sm text-slate-400">Freedom Number</p>
+              <p className="mt-1 text-2xl font-semibold">
+                {formatCurrency(data.freedomNumber)}
+              </p>
+            </div>
           </div>
 
-          <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-slate-400">Pensions</h2>
-            <p className="text-3xl font-bold mt-2">
-  £{pension.toLocaleString()}
-</p>
-<input
-  type="number"
-  value={pension}
-  onChange={(event) => setPension(Number(event.target.value))}
-  className="mt-4 w-full rounded-lg bg-slate-800 px-3 py-2 text-white outline-none"
-  aria-label="Pension value"
-/> 
-</div>
-
-          <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-slate-400">Investments</h2>
-            <p className="text-3xl font-bold mt-2">£0</p>
+          <div className="mt-6 h-4 overflow-hidden rounded-full bg-slate-800">
+            <div
+              className="h-full rounded-full bg-cyan-400 transition-all duration-500"
+              style={{ width: `${progressBarWidth}%` }}
+            />
           </div>
 
-          <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-slate-400">Property</h2>
-            <p className="text-3xl font-bold mt-2">£0</p>
+          <div className="mt-4 flex flex-col justify-between gap-2 text-sm text-slate-400 md:flex-row">
+            <span>{formatCurrency(netWorth)} built</span>
+            <span>{formatCurrency(amountRemaining)} remaining</span>
+          </div>
+        </section>
+
+        <section className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <DashboardCard
+            title="Net Worth"
+            value={formatCurrency(netWorth)}
+            subtitle="Assets minus debts"
+          />
+
+          <DashboardCard
+            title="Investable Wealth"
+            value={formatCurrency(investableWealth)}
+            subtitle="Excludes your home"
+          />
+
+          <DashboardCard
+  title="Today's Wealth"
+  value={formatCurrency(estimatedDailyGrowth)}
+  subtitle={"Estimated at " + data.annualReturn + "% annually"}
+  highlight
+/>
+
+          <DashboardCard
+  title="Freedom Score"
+  value={freedomProgress + "%"}
+  subtitle="Progress towards your target"
+/>
+        </section>
+
+        <section className="mt-10">
+          <div className="mb-5">
+            <h2 className="text-2xl font-bold">Your Financial Picture</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Change any number and the dashboard updates instantly.
+            </p>
           </div>
 
-          <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-slate-400">Today's Wealth</h2>
-            <p className="text-3xl font-bold mt-2">£23.14</p>
-            <p className="text-sm text-emerald-400 mt-2">
-  While you were sleeping...
-</p>
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <MoneyInput
+              label="Pensions"
+              value={data.pension}
+              onChange={(value) => updateValue("pension", value)}
+            />
+
+            <MoneyInput
+              label="Investments"
+              value={data.investments}
+              onChange={(value) => updateValue("investments", value)}
+            />
+
+            <MoneyInput
+              label="Property"
+              value={data.property}
+              onChange={(value) => updateValue("property", value)}
+            />
+
+            <MoneyInput
+              label="Cash and Savings"
+              value={data.cash}
+              onChange={(value) => updateValue("cash", value)}
+            />
+
+            <MoneyInput
+              label="Debts"
+              value={data.debts}
+              onChange={(value) => updateValue("debts", value)}
+            />
+
+            <MoneyInput
+              label="Freedom Number"
+              value={data.freedomNumber}
+              onChange={(value) => updateValue("freedomNumber", value)}
+            />
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-2xl bg-slate-900 p-6">
+          <label
+            htmlFor="annual-return"
+            className="text-sm font-medium text-slate-300"
+          >
+            Estimated annual investment return
+          </label>
+
+          <div className="mt-4 flex items-center gap-4">
+            <input
+              id="annual-return"
+              type="range"
+              min="0"
+              max="12"
+              step="0.5"
+              value={data.annualReturn}
+              onChange={(event) =>
+                updateValue("annualReturn", Number(event.target.value))
+              }
+              className="w-full accent-cyan-400"
+            />
+
+            <span className="w-16 text-right text-lg font-semibold text-cyan-400">
+              {data.annualReturn}%
+            </span>
           </div>
 
-          <div className="bg-slate-900 rounded-xl p-6">
-            <h2 className="text-slate-400">Freedom Score</h2>
-            <p className="text-3xl font-bold mt-2">0%</p>
-          </div>
+          <p className="mt-3 text-xs text-slate-500">
+            This is an estimate, not a guaranteed return.
+          </p>
+        </section>
 
-        </div>
-
+        <footer className="mt-10 text-center text-xs text-slate-600">
+          Project Freedom v0.1.0 — Foundation
+        </footer>
       </div>
     </main>
+  );
+}
+
+type DashboardCardProps = {
+  title: string;
+  value: string;
+  subtitle: string;
+  highlight?: boolean;
+};
+
+function DashboardCard({
+  title,
+  value,
+  subtitle,
+  highlight = false,
+}: DashboardCardProps) {
+  return (
+    <div className="rounded-2xl bg-slate-900 p-6">
+      <p className="text-sm text-slate-400">{title}</p>
+
+      <p
+        className={`mt-2 text-3xl font-bold ${
+          highlight ? "text-emerald-400" : "text-white"
+        }`}
+      >
+        {value}
+      </p>
+
+      <p className="mt-2 text-xs text-slate-500">{subtitle}</p>
+    </div>
+  );
+}
+
+type MoneyInputProps = {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+};
+
+function MoneyInput({ label, value, onChange }: MoneyInputProps) {
+  return (
+    <div className="rounded-2xl bg-slate-900 p-5">
+      <label className="text-sm font-medium text-slate-400">{label}</label>
+
+      <div className="mt-3 flex items-center rounded-xl bg-slate-800 px-4">
+        <span className="text-slate-400">£</span>
+
+        <input
+          type="number"
+          min="0"
+          value={value}
+          onChange={(event) => onChange(Number(event.target.value))}
+          className="w-full bg-transparent px-2 py-3 text-lg font-semibold text-white outline-none"
+          aria-label={label}
+        />
+      </div>
+    </div>
   );
 }
