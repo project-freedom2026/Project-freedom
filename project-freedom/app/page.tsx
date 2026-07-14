@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DashboardCard from "../components/DashboardCard";
+import MoneyInput from "../components/MoneyInput"
+import FreedomProgress from "../components/FreedomProgress";
 
 type FinancialData = {
   pension: number;
@@ -117,38 +120,13 @@ export default function Home() {
           </p>
         </header>
 
-        <section className="mt-10 rounded-2xl border border-cyan-500/20 bg-slate-900 p-6 md:p-8">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <div>
-              <p className="text-sm text-slate-400">Freedom Progress</p>
-
-              <p className="mt-1 text-5xl font-bold text-cyan-400">
-                {freedomProgress}%
-              </p>
-
-              <p className="mt-3 text-slate-300">{motivationalMessage}</p>
-            </div>
-
-            <div className="md:text-right">
-              <p className="text-sm text-slate-400">Freedom Number</p>
-              <p className="mt-1 text-2xl font-semibold">
-                {formatCurrency(data.freedomNumber)}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 h-4 overflow-hidden rounded-full bg-slate-800">
-            <div
-              className="h-full rounded-full bg-cyan-400 transition-all duration-500"
-              style={{ width: `${progressBarWidth}%` }}
-            />
-          </div>
-
-          <div className="mt-4 flex flex-col justify-between gap-2 text-sm text-slate-400 md:flex-row">
-            <span>{formatCurrency(netWorth)} built</span>
-            <span>{formatCurrency(amountRemaining)} remaining</span>
-          </div>
-        </section>
+        <FreedomProgress
+  progress={freedomProgress}
+  netWorth={formatCurrency(netWorth)}
+  amountRemaining={formatCurrency(amountRemaining)}
+  freedomNumber={formatCurrency(data.freedomNumber)}
+  message={motivationalMessage}
+/>
 
         <section className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <DashboardCard
@@ -261,62 +239,5 @@ export default function Home() {
         </footer>
       </div>
     </main>
-  );
-}
-
-type DashboardCardProps = {
-  title: string;
-  value: string;
-  subtitle: string;
-  highlight?: boolean;
-};
-
-function DashboardCard({
-  title,
-  value,
-  subtitle,
-  highlight = false,
-}: DashboardCardProps) {
-  return (
-    <div className="rounded-2xl bg-slate-900 p-6">
-      <p className="text-sm text-slate-400">{title}</p>
-
-      <p
-        className={`mt-2 text-3xl font-bold ${
-          highlight ? "text-emerald-400" : "text-white"
-        }`}
-      >
-        {value}
-      </p>
-
-      <p className="mt-2 text-xs text-slate-500">{subtitle}</p>
-    </div>
-  );
-}
-
-type MoneyInputProps = {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-};
-
-function MoneyInput({ label, value, onChange }: MoneyInputProps) {
-  return (
-    <div className="rounded-2xl bg-slate-900 p-5">
-      <label className="text-sm font-medium text-slate-400">{label}</label>
-
-      <div className="mt-3 flex items-center rounded-xl bg-slate-800 px-4">
-        <span className="text-slate-400">£</span>
-
-        <input
-          type="number"
-          min="0"
-          value={value}
-          onChange={(event) => onChange(Number(event.target.value))}
-          className="w-full bg-transparent px-2 py-3 text-lg font-semibold text-white outline-none"
-          aria-label={label}
-        />
-      </div>
-    </div>
   );
 }
