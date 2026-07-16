@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
-import MoneyInput from "../components/MoneyInput"
+import FreedomDateEstimator from "../components/FreedomDateEstimator";
+import MoneyInput from "../components/MoneyInput";
 import FreedomProgress from "../components/FreedomProgress";
 
 type FinancialData = {
@@ -13,6 +14,7 @@ type FinancialData = {
   debts: number;
   freedomNumber: number;
   annualReturn: number;
+  annualContribution: number;
 };
 
 const startingData: FinancialData = {
@@ -23,6 +25,7 @@ const startingData: FinancialData = {
   debts: 0,
   freedomNumber: 1000000,
   annualReturn: 7,
+  annualContribution: 0,
 };
 
 const formatCurrency = (value: number) =>
@@ -42,11 +45,12 @@ export default function Home() {
     if (savedData) {
       try {
         const parsedData = JSON.parse(savedData) as Partial<FinancialData>;
-
-        setData((currentData) => ({
-          ...currentData,
+        const mergedData: FinancialData = {
+          ...startingData,
           ...parsedData,
-        }));
+        };
+
+        setData(mergedData);
       } catch {
         console.error("Project Freedom data could not be loaded.");
       }
@@ -82,8 +86,6 @@ export default function Home() {
     data.freedomNumber > 0
       ? Math.round((netWorth / data.freedomNumber) * 100)
       : 0;
-
-  const progressBarWidth = Math.min(Math.max(freedomProgress, 0), 100);
 
   const estimatedDailyGrowth =
     ((data.pension + data.investments + data.cash) *
@@ -127,6 +129,16 @@ export default function Home() {
   freedomNumber={formatCurrency(data.freedomNumber)}
   message={motivationalMessage}
 />
+
+        <FreedomDateEstimator
+          investableWealth={investableWealth}
+          annualContribution={data.annualContribution}
+          annualReturn={data.annualReturn}
+          freedomNumber={data.freedomNumber}
+          onAnnualContributionChange={(value) =>
+            updateValue("annualContribution", value)
+          }
+        />
 
         <section className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <DashboardCard
