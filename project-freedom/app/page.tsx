@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
 import FreedomDateEstimator from "../components/FreedomDateEstimator";
+import InsightsPanel from "../components/InsightsPanel";
 import MoneyInput from "../components/MoneyInput";
 import FreedomProgress from "../components/FreedomProgress";
+import { estimateFreedomDate } from "../lib/estimateFreedomDate";
+import { generateFinancialInsights } from "../lib/generateFinancialInsights";
 
 type FinancialData = {
   pension: number;
@@ -35,40 +38,56 @@ const formatCurrency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+const sanitizeFinancialValue = (value: number | null | undefined): number => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.max(0, value);
+};
+
+const normalizeFinancialData = (value: Partial<FinancialData> | null | undefined): FinancialData => ({
+  pension: sanitizeFinancialValue(value?.pension),
+  investments: sanitizeFinancialValue(value?.investments),
+  property: sanitizeFinancialValue(value?.property),
+  cash: sanitizeFinancialValue(value?.cash),
+  debts: sanitizeFinancialValue(value?.debts),
+  freedomNumber: sanitizeFinancialValue(value?.freedomNumber),
+  annualReturn: sanitizeFinancialValue(value?.annualReturn),
+  annualContribution: sanitizeFinancialValue(value?.annualContribution),
+});
+
 export default function Home() {
-  const [data, setData] = useState<FinancialData>(startingData);
-  const [hasLoaded, setHasLoaded] = useState(false);
-
-  useEffect(() => {
-    const savedData = localStorage.getItem("project-freedom-data");
-
-    if (savedData) {
-      try {
-        const parsedData = JSON.parse(savedData) as Partial<FinancialData>;
-        const mergedData: FinancialData = {
-          ...startingData,
-          ...parsedData,
-        };
-
-        setData(mergedData);
-      } catch {
-        console.error("Project Freedom data could not be loaded.");
-      }
+  const [data, setData] = useState<FinancialData>(() => {
+    if (typeof window === "undefined") {
+      return startingData;
     }
 
-    setHasLoaded(true);
-  }, []);
+    const savedData = window.localStorage.getItem("project-freedom-data");
+
+    if (!savedData) {
+      return startingData;
+    }
+
+    try {
+      const parsedData = JSON.parse(savedData) as Partial<FinancialData>;
+      return normalizeFinancialData(parsedData);
+    } catch {
+      console.error("Project Freedom data could not be loaded.");
+      return startingData;
+    }
+  });
 
   useEffect(() => {
-    if (hasLoaded) {
-      localStorage.setItem("project-freedom-data", JSON.stringify(data));
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("project-freedom-data", JSON.stringify(data));
     }
-  }, [data, hasLoaded]);
+  }, [data]);
 
   const updateValue = (field: keyof FinancialData, value: number) => {
     setData((currentData) => ({
       ...currentData,
-      [field]: Number.isFinite(value) ? value : 0,
+      [field]: sanitizeFinancialValue(value),
     }));
   };
 
@@ -105,6 +124,29 @@ export default function Home() {
             ? "Momentum is building. Keep moving forward."
             : "Every contribution moves you closer to freedom.";
 
+  const freedomEstimate = estimateFreedomDate({
+    investableWealth,
+    annualContribution: data.annualContribution,
+    annualReturn: data.annualReturn,
+    freedomNumber: data.freedomNumber,
+  });
+
+  const insights = generateFinancialInsights({
+    pension: data.pension,
+    investments: data.investments,
+    property: data.property,
+    cash: data.cash,
+    debts: data.debts,
+    annualContribution: data.annualContribution,
+    annualReturn: data.annualReturn,
+    freedomNumber: data.freedomNumber,
+    investableWealth,
+    netWorth,
+    freedomProgress,
+    estimatedFreedomYears: freedomEstimate.years,
+    estimatedFreedomStatus: freedomEstimate.status,
+  });
+
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-10 text-white md:px-10">
       <div className="mx-auto max-w-6xl">
@@ -139,6 +181,8 @@ export default function Home() {
             updateValue("annualContribution", value)
           }
         />
+
+        <InsightsPanel insights={insights} />
 
         <section className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <DashboardCard
