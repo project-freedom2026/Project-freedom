@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import DashboardCard from "../components/DashboardCard";
 import FreedomDateEstimator from "../components/FreedomDateEstimator";
+import FreedomLifestylePlanner from "../components/FreedomLifestylePlanner";
 import InsightsPanel from "../components/InsightsPanel";
 import MoneyInput from "../components/MoneyInput";
 import FreedomProgress from "../components/FreedomProgress";
+import { calculateFreedomNumber } from "../lib/calculateFreedomNumber";
 import { estimateFreedomDate } from "../lib/estimateFreedomDate";
 import { generateFinancialInsights } from "../lib/generateFinancialInsights";
 
@@ -18,6 +20,8 @@ type FinancialData = {
   freedomNumber: number;
   annualReturn: number;
   annualContribution: number;
+  annualIncome: number;
+  withdrawalRate: number;
 };
 
 const startingData: FinancialData = {
@@ -26,9 +30,14 @@ const startingData: FinancialData = {
   property: 400000,
   cash: 0,
   debts: 0,
-  freedomNumber: 1000000,
+  freedomNumber: calculateFreedomNumber({
+    annualIncome: 30000,
+    withdrawalRate: 4,
+  }),
   annualReturn: 7,
   annualContribution: 0,
+  annualIncome: 30000,
+  withdrawalRate: 4,
 };
 
 const formatCurrency = (value: number) =>
@@ -55,6 +64,14 @@ const normalizeFinancialData = (value: Partial<FinancialData> | null | undefined
   freedomNumber: sanitizeFinancialValue(value?.freedomNumber),
   annualReturn: sanitizeFinancialValue(value?.annualReturn),
   annualContribution: sanitizeFinancialValue(value?.annualContribution),
+  annualIncome:
+    typeof value?.annualIncome === "number" && Number.isFinite(value.annualIncome)
+      ? sanitizeFinancialValue(value.annualIncome)
+      : startingData.annualIncome,
+  withdrawalRate:
+    typeof value?.withdrawalRate === "number" && Number.isFinite(value.withdrawalRate)
+      ? sanitizeFinancialValue(value.withdrawalRate)
+      : startingData.withdrawalRate,
 });
 
 export default function Home() {
@@ -91,6 +108,34 @@ export default function Home() {
     }));
   };
 
+  const updateLifestyleValue = (
+    field: "annualIncome" | "withdrawalRate",
+    value: number,
+  ) => {
+    setData((currentData) => {
+      const nextAnnualIncome =
+        field === "annualIncome"
+          ? sanitizeFinancialValue(value)
+          : currentData.annualIncome;
+      const nextWithdrawalRate =
+        field === "withdrawalRate"
+          ? sanitizeFinancialValue(value)
+          : currentData.withdrawalRate;
+
+      const nextFreedomNumber = calculateFreedomNumber({
+        annualIncome: nextAnnualIncome,
+        withdrawalRate: nextWithdrawalRate,
+      });
+
+      return {
+        ...currentData,
+        annualIncome: nextAnnualIncome,
+        withdrawalRate: nextWithdrawalRate,
+        freedomNumber: nextFreedomNumber,
+      };
+    });
+  };
+
   const netWorth =
     data.pension +
     data.investments +
@@ -101,9 +146,17 @@ export default function Home() {
   const investableWealth =
     data.pension + data.investments + data.cash - data.debts;
 
+  const calculatedFreedomNumber = calculateFreedomNumber({
+    annualIncome: data.annualIncome,
+    withdrawalRate: data.withdrawalRate,
+  });
+
+  const effectiveFreedomNumber =
+    data.freedomNumber > 0 ? data.freedomNumber : calculatedFreedomNumber;
+
   const freedomProgress =
-    data.freedomNumber > 0
-      ? Math.round((netWorth / data.freedomNumber) * 100)
+    effectiveFreedomNumber > 0
+      ? Math.round((netWorth / effectiveFreedomNumber) * 100)
       : 0;
 
   const estimatedDailyGrowth =
@@ -111,7 +164,7 @@ export default function Home() {
       (data.annualReturn / 100)) /
     365;
 
-  const amountRemaining = Math.max(data.freedomNumber - netWorth, 0);
+  const amountRemaining = Math.max(effectiveFreedomNumber - netWorth, 0);
 
   const motivationalMessage =
     freedomProgress >= 100
@@ -128,7 +181,7 @@ export default function Home() {
     investableWealth,
     annualContribution: data.annualContribution,
     annualReturn: data.annualReturn,
-    freedomNumber: data.freedomNumber,
+    freedomNumber: effectiveFreedomNumber,
   });
 
   const insights = generateFinancialInsights({
@@ -139,7 +192,7 @@ export default function Home() {
     debts: data.debts,
     annualContribution: data.annualContribution,
     annualReturn: data.annualReturn,
-    freedomNumber: data.freedomNumber,
+    freedomNumber: effectiveFreedomNumber,
     investableWealth,
     netWorth,
     freedomProgress,
@@ -168,15 +221,27 @@ export default function Home() {
   progress={freedomProgress}
   netWorth={formatCurrency(netWorth)}
   amountRemaining={formatCurrency(amountRemaining)}
-  freedomNumber={formatCurrency(data.freedomNumber)}
+  freedomNumber={formatCurrency(effectiveFreedomNumber)}
   message={motivationalMessage}
 />
+
+        <FreedomLifestylePlanner
+          annualIncome={data.annualIncome}
+          withdrawalRate={data.withdrawalRate}
+          calculatedFreedomNumber={calculatedFreedomNumber}
+          onAnnualIncomeChange={(value) =>
+            updateLifestyleValue("annualIncome", value)
+          }
+          onWithdrawalRateChange={(value) =>
+            updateLifestyleValue("withdrawalRate", value)
+          }
+        />
 
         <FreedomDateEstimator
           investableWealth={investableWealth}
           annualContribution={data.annualContribution}
           annualReturn={data.annualReturn}
-          freedomNumber={data.freedomNumber}
+          freedomNumber={effectiveFreedomNumber}
           onAnnualContributionChange={(value) =>
             updateValue("annualContribution", value)
           }
