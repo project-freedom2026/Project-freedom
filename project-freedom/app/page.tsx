@@ -6,10 +6,12 @@ import FreedomDateEstimator from "../components/FreedomDateEstimator";
 import FreedomLifestylePlanner from "../components/FreedomLifestylePlanner";
 import InsightsPanel from "../components/InsightsPanel";
 import MoneyInput from "../components/MoneyInput";
+import MonthlyCheckIn from "../components/MonthlyCheckIn";
 import FreedomProgress from "../components/FreedomProgress";
 import { calculateFreedomNumber } from "../lib/calculateFreedomNumber";
 import { estimateFreedomDate } from "../lib/estimateFreedomDate";
 import { generateFinancialInsights } from "../lib/generateFinancialInsights";
+import { MonthlyCheckInSnapshot } from "../lib/monthlyCheckIns";
 
 type FinancialData = {
   pension: number;
@@ -74,6 +76,8 @@ const normalizeFinancialData = (value: Partial<FinancialData> | null | undefined
       : startingData.withdrawalRate,
 });
 
+const monthlyCheckInStorageKey = "project-freedom-monthly-check-ins";
+
 export default function Home() {
   const [data, setData] = useState<FinancialData>(() => {
     if (typeof window === "undefined") {
@@ -95,11 +99,36 @@ export default function Home() {
     }
   });
 
+  const [checkIns, setCheckIns] = useState<MonthlyCheckInSnapshot[]>(() => {
+    if (typeof window === "undefined") {
+      return [];
+    }
+
+    const savedCheckIns = window.localStorage.getItem(monthlyCheckInStorageKey);
+
+    if (!savedCheckIns) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(savedCheckIns) as MonthlyCheckInSnapshot[];
+    } catch {
+      console.error("Project Freedom monthly check-ins could not be loaded.");
+      return [];
+    }
+  });
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("project-freedom-data", JSON.stringify(data));
     }
   }, [data]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(monthlyCheckInStorageKey, JSON.stringify(checkIns));
+    }
+  }, [checkIns]);
 
   const updateValue = (field: keyof FinancialData, value: number) => {
     setData((currentData) => ({
@@ -184,6 +213,22 @@ export default function Home() {
     freedomNumber: effectiveFreedomNumber,
   });
 
+  const handleSaveSnapshot = (snapshot: MonthlyCheckInSnapshot) => {
+    setCheckIns((currentCheckIns) => {
+      const existingIndex = currentCheckIns.findIndex(
+        (item) => item.date === snapshot.date,
+      );
+
+      if (existingIndex >= 0) {
+        const updatedCheckIns = [...currentCheckIns];
+        updatedCheckIns[existingIndex] = snapshot;
+        return updatedCheckIns;
+      }
+
+      return [snapshot, ...currentCheckIns];
+    });
+  };
+
   const insights = generateFinancialInsights({
     pension: data.pension,
     investments: data.investments,
@@ -248,6 +293,18 @@ export default function Home() {
         />
 
         <InsightsPanel insights={insights} />
+
+        <MonthlyCheckIn
+          pension={data.pension}
+          investments={data.investments}
+          cash={data.cash}
+          debt={data.debts}
+          netWorth={netWorth}
+          freedomScore={freedomProgress}
+          freedomNumber={effectiveFreedomNumber}
+          snapshots={checkIns}
+          onSaveSnapshot={handleSaveSnapshot}
+        />
 
         <section className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <DashboardCard
