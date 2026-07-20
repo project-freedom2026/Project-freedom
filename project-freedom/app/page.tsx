@@ -9,6 +9,7 @@ import MoneyInput from "../components/MoneyInput";
 import MonthlyCheckIn from "../components/MonthlyCheckIn";
 import FreedomProgress from "../components/FreedomProgress";
 import { calculateFreedomNumber } from "../lib/calculateFreedomNumber";
+import { appMetadata } from "../lib/appMetadata";
 import { estimateFreedomDate } from "../lib/estimateFreedomDate";
 import { generateFinancialInsights } from "../lib/generateFinancialInsights";
 import { MonthlyCheckInSnapshot } from "../lib/monthlyCheckIns";
@@ -412,8 +413,11 @@ export default function Home() {
           </p>
         </section>
 
-        <footer className="mt-10 text-center text-xs text-slate-600">
-          Project Freedom v0.1.0 — Foundation
+        <footer className="mt-10 border-t border-slate-800 pt-6 text-center text-xs text-slate-600">
+          <span className="font-medium text-slate-500">
+            {appMetadata.appName} {appMetadata.version}
+          </span>
+          <span className="ml-2 text-slate-600">{appMetadata.releaseName}</span>
         </footer>
       </div>
     </main>
