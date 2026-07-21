@@ -1,4 +1,5 @@
 import { estimateFreedomDate } from "../lib/estimateFreedomDate";
+import { isFreedomAchieved } from "../lib/isFreedomAchieved";
 
 type FreedomDateEstimatorProps = {
   investableWealth: number;
@@ -15,6 +16,11 @@ export default function FreedomDateEstimator({
   freedomNumber,
   onAnnualContributionChange,
 }: FreedomDateEstimatorProps) {
+  const achievementReached = isFreedomAchieved({
+    investableWealth,
+    freedomNumber,
+  });
+
   const estimate = estimateFreedomDate({
     investableWealth,
     annualContribution,
@@ -29,8 +35,8 @@ export default function FreedomDateEstimator({
       : null;
 
   const getMessage = () => {
-    if (estimate.status === "already-reached") {
-      return "Freedom achieved";
+    if (achievementReached) {
+      return "🎉 Financial Freedom Achieved";
     }
 
     if (estimate.status === "reachable" && estimate.years !== null) {
@@ -49,43 +55,74 @@ export default function FreedomDateEstimator({
             {getMessage()}
           </h3>
           <p className="mt-3 text-sm text-slate-400">
-            {estimate.status === "reachable" && estimatedYear !== null
-              ? `Estimated around ${estimatedYear}`
-              : estimate.status === "already-reached"
-                ? "You are already at or above your Freedom Number."
-                : "Your current assumptions do not reach the target within 100 years."}
+            {achievementReached
+              ? "Freedom achieved today."
+              : estimate.status === "reachable" && estimatedYear !== null
+                ? `Estimated around ${estimatedYear}`
+                : estimate.status === "unreachable"
+                  ? "Your current assumptions do not reach the target within 100 years."
+                  : "You are already at or above your Freedom Number."}
           </p>
         </div>
 
-        <div className="rounded-2xl bg-slate-800/80 px-4 py-3">
-          <label className="text-sm font-medium text-slate-300" htmlFor="annual-contribution">
-            Annual contribution
-          </label>
-          <div className="mt-3 flex items-center rounded-xl bg-slate-900 px-4">
-            <span className="text-slate-400">£</span>
-            <input
-              id="annual-contribution"
-              type="number"
-              min="0"
-              value={annualContribution}
-              onChange={(event) =>
-                onAnnualContributionChange(Number(event.target.value))
-              }
-              className="w-full bg-transparent px-2 py-3 text-lg font-semibold text-white outline-none"
-              aria-label="Annual contribution"
-            />
+        {!achievementReached && (
+          <div className="rounded-2xl bg-slate-800/80 px-4 py-3">
+            <label className="text-sm font-medium text-slate-300" htmlFor="annual-contribution">
+              Annual contribution
+            </label>
+            <div className="mt-3 flex items-center rounded-xl bg-slate-900 px-4">
+              <span className="text-slate-400">£</span>
+              <input
+                id="annual-contribution"
+                type="number"
+                min="0"
+                value={annualContribution}
+                onChange={(event) =>
+                  onAnnualContributionChange(Number(event.target.value))
+                }
+                className="w-full bg-transparent px-2 py-3 text-lg font-semibold text-white outline-none"
+                aria-label="Annual contribution"
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <div className="mt-6 rounded-2xl bg-slate-800/70 p-4 text-sm text-slate-300">
-        <p>
-          Based on your current investable wealth, annual contribution, expected return, and Freedom Number.
-        </p>
-        <p className="mt-2 text-xs text-slate-500">
-          This is an estimate, not a guarantee of future investment performance.
-        </p>
-      </div>
+      {achievementReached && (
+        <div className="mt-6 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 p-6">
+          <h4 className="text-lg font-semibold text-emerald-300">
+            Congratulations!
+          </h4>
+          <p className="mt-2 text-emerald-100">
+            You&apos;ve reached your Freedom Number based on your chosen lifestyle assumptions.
+          </p>
+          <p className="mt-3 text-sm text-emerald-200">
+            Work is now optional. Maintain your investments and review your lifestyle assumptions regularly.
+          </p>
+        </div>
+      )}
+
+      {!achievementReached && (
+        <div className="mt-6 rounded-2xl bg-slate-800/70 p-4 text-sm text-slate-300">
+          <p>
+            Based on your current investable wealth, annual contribution, expected return, and Freedom Number.
+          </p>
+          <p className="mt-2 text-xs text-slate-500">
+            This is an estimate, not a guarantee of future investment performance.
+          </p>
+        </div>
+      )}
+
+      {achievementReached && (
+        <div className="mt-6 rounded-2xl bg-slate-800/70 p-4 text-xs text-slate-400">
+          <p>
+            0 years remaining.
+          </p>
+          <p className="mt-2">
+            Adjust your lifestyle assumptions in the Lifestyle Planner if you would like to model different scenarios.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

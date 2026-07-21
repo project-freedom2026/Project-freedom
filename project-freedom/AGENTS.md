@@ -15,14 +15,39 @@ This repository is a small Next.js app for a personal finance dashboard. The mai
 - For new UI features, prefer adding a small reusable component in [components/](components/) and wiring it from [app/page.tsx](app/page.tsx).
 - Avoid editing generated or build output directories such as [.next/](.next/).
 
-## Verification
-Run these commands from the project root when changing app behavior or adding new logic:
-- npm run lint
-- npm run build
+## State management & persistence
+- Component state lives in [app/page.tsx](app/page.tsx) and is passed down via props to child components.
+- Child components call callback functions to update parent state; they do not manage financial data themselves.
+- All state is persisted to browser localStorage using `useState` factory functions for initialization:
+  ```typescript
+  const [data, setData] = useState<FinancialData>(() => {
+    const saved = window.localStorage.getItem("key");
+    return saved ? JSON.parse(saved) : defaultData;
+  });
+  ```
+- Use `useEffect` with state dependency to persist changes back to localStorage after each update.
+- Always check for `typeof window !== "undefined"` before accessing localStorage (SSR safety).
+
+## Financial data patterns
+- All numeric inputs are sanitized with `sanitizeFinancialValue()` to prevent NaN or Infinity propagation:
+  - Checks if value is a finite number
+  - Returns 0 for invalid inputs
+  - Ensures values are >= 0
+- Financial calculation functions (in [lib/](lib/)) return typed results (e.g., `FreedomEstimateResult`) with explicit status fields to avoid implicit assumptions.
+- Use immutable updates: `setData((current) => ({ ...current, field: newValue }))` instead of mutations.
+- Always validate localStorage data with try-catch; corrupt data should fall back to defaults without breaking the app.
+
+## Development setup & verification
+- **Start dev server**: `npm run dev` (runs on http://localhost:3000)
+- **Build for production**: `npm run build`
+- **Run production build locally**: `npm run start`
+- **Lint code**: `npm run lint` (ESLint with Next.js TypeScript rules)
+- Run these commands when changing app behavior, adding logic, or before submitting changes.
 
 ## Useful references
+- [ROADMAP.md](ROADMAP.md) for product direction and principles
 - [README.md](README.md) for setup and project context
-- [app/page.tsx](app/page.tsx) for the primary user flow
+- [app/page.tsx](app/page.tsx) for the primary user flow and state structure
 - [components/](components/) for presentational building blocks
 - [lib/](lib/) for calculations and helper logic
 <!-- END:project-freedom-agent-rules -->

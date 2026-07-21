@@ -57,10 +57,10 @@ export function generateFinancialInsights(
 
   if (freedomProgress >= 100) {
     insights.push({
-      id: "milestone-complete",
-      title: "Freedom milestone reached",
+      id: "freedom-achieved",
+      title: "You've achieved Financial Freedom",
       message:
-        "You have reached your Freedom Number. That is a meaningful milestone, and it is worth recognising the progress you have already made.",
+        "You've achieved Financial Freedom. Continue reviewing your spending, withdrawal assumptions and investment strategy to help maintain your position.",
       tone: "positive",
       priority: 1,
     });
@@ -102,7 +102,16 @@ export function generateFinancialInsights(
     });
   }
 
-  if (annualContribution <= 0) {
+  if (freedomProgress >= 100) {
+    insights.push({
+      id: "annual-contribution-maintenance",
+      title: "Consider your contribution strategy",
+      message:
+        "With Financial Freedom achieved, contributions are optional. You may choose to continue building wealth, reduce contributions, or redirect funds elsewhere based on your priorities.",
+      tone: "neutral",
+      priority: 3,
+    });
+  } else if (annualContribution <= 0) {
     insights.push({
       id: "annual-contribution-zero",
       title: "Add an annual contribution",
@@ -154,6 +163,8 @@ export function generateFinancialInsights(
       tone: "warning",
       priority: 6,
     });
+  } else if (freedomProgress >= 100) {
+    // Skip the timeline insight if freedom is already achieved
   } else if (estimatedFreedomStatus === "already-reached") {
     insights.push({
       id: "freedom-already-reached",
