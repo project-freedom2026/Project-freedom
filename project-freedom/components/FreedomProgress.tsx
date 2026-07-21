@@ -1,6 +1,6 @@
 type FreedomProgressProps = {
   progress: number;
-  netWorth: string;
+  investableWealth: string;
   amountRemaining: string;
   freedomNumber: string;
   message: string;
@@ -8,7 +8,7 @@ type FreedomProgressProps = {
 
 export default function FreedomProgress({
   progress,
-  netWorth,
+  investableWealth,
   amountRemaining,
   freedomNumber,
   message,
@@ -45,7 +45,7 @@ export default function FreedomProgress({
       </div>
 
       <div className="mt-4 flex flex-col justify-between gap-2 text-sm text-slate-400 md:flex-row">
-        <span>{netWorth} built</span>
+        <span>{investableWealth} built</span>
         <span>{amountRemaining} remaining</span>
       </div>
     </section>

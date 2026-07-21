@@ -46,6 +46,22 @@ export default function FreedomDateEstimator({
     return "This target is not reachable within 100 years under the current assumptions.";
   };
 
+  const getSubtitle = () => {
+    if (achievementReached) {
+      return "Freedom achieved today.";
+    }
+
+    if (estimate.status === "reachable" && estimatedYear !== null) {
+      return `Estimated around ${estimatedYear}`;
+    }
+
+    if (estimate.status === "unreachable") {
+      return "Your current assumptions do not reach the target within 100 years.";
+    }
+
+    return "You are already at or above your Freedom Number.";
+  };
+
   return (
     <section className="mt-8 rounded-2xl border border-cyan-500/20 bg-slate-900 p-6 md:p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -55,13 +71,7 @@ export default function FreedomDateEstimator({
             {getMessage()}
           </h3>
           <p className="mt-3 text-sm text-slate-400">
-            {achievementReached
-              ? "Freedom achieved today."
-              : estimate.status === "reachable" && estimatedYear !== null
-                ? `Estimated around ${estimatedYear}`
-                : estimate.status === "unreachable"
-                  ? "Your current assumptions do not reach the target within 100 years."
-                  : "You are already at or above your Freedom Number."}
+            {getSubtitle()}
           </p>
         </div>
 

@@ -186,7 +186,7 @@ export default function Home() {
 
   const freedomProgress =
     effectiveFreedomNumber > 0
-      ? Math.round((netWorth / effectiveFreedomNumber) * 100)
+      ? Math.round((investableWealth / effectiveFreedomNumber) * 100)
       : 0;
 
   const estimatedDailyGrowth =
@@ -194,16 +194,16 @@ export default function Home() {
       (data.annualReturn / 100)) /
     365;
 
-  const amountRemaining = Math.max(effectiveFreedomNumber - netWorth, 0);
+  const amountRemaining = Math.max(effectiveFreedomNumber - investableWealth, 0);
 
   const motivationalMessage =
-    freedomProgress >= 100
-      ? "You have reached your Freedom Number."
-      : freedomProgress >= 75
+    investableWealth >= effectiveFreedomNumber
+      ? "You've built the freedom. Now you choose what's next."
+      : investableWealth >= (effectiveFreedomNumber * 0.75)
         ? "Freedom is firmly in sight."
-        : freedomProgress >= 50
+        : investableWealth >= (effectiveFreedomNumber * 0.5)
           ? "You have already built a powerful financial foundation."
-          : freedomProgress >= 25
+          : investableWealth >= (effectiveFreedomNumber * 0.25)
             ? "Momentum is building. Keep moving forward."
             : "Every contribution moves you closer to freedom.";
 
@@ -265,7 +265,7 @@ export default function Home() {
 
         <FreedomProgress
   progress={freedomProgress}
-  netWorth={formatCurrency(netWorth)}
+  investableWealth={formatCurrency(investableWealth)}
   amountRemaining={formatCurrency(amountRemaining)}
   freedomNumber={formatCurrency(effectiveFreedomNumber)}
   message={motivationalMessage}
