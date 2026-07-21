@@ -1,5 +1,6 @@
 import { estimateFreedomDate } from "../lib/estimateFreedomDate";
 import { isFreedomAchieved } from "../lib/isFreedomAchieved";
+import CalculationExplanation from "./CalculationExplanation";
 
 type FreedomDateEstimatorProps = {
   investableWealth: number;
@@ -120,6 +121,10 @@ export default function FreedomDateEstimator({
           <p className="mt-2 text-xs text-slate-500">
             This is an estimate, not a guarantee of future investment performance.
           </p>
+          <CalculationExplanation
+            formula="Estimates based on: Investable Wealth + (Annual Contributions × Years) + Investment Returns = Freedom Number"
+            description="Freedom Date estimates are based on your investable wealth, annual contributions, expected investment return, and Freedom Number."
+          />
         </div>
       )}
 

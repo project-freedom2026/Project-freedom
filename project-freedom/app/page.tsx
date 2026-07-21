@@ -8,6 +8,8 @@ import InsightsPanel from "../components/InsightsPanel";
 import MoneyInput from "../components/MoneyInput";
 import MonthlyCheckIn from "../components/MonthlyCheckIn";
 import FreedomProgress from "../components/FreedomProgress";
+import CalculationExplanation from "../components/CalculationExplanation";
+import FinancialDefinitions from "../components/FinancialDefinitions";
 import { calculateFreedomNumber } from "../lib/calculateFreedomNumber";
 import { appMetadata } from "../lib/appMetadata";
 import { estimateFreedomDate } from "../lib/estimateFreedomDate";
@@ -331,7 +333,11 @@ export default function Home() {
   title="Freedom Score"
   value={freedomProgress + "%"}
   subtitle="Progress towards your target"
-/>
+>
+            <CalculationExplanation
+              formula="Freedom Score = Investable Wealth ÷ Freedom Number"
+            />
+          </DashboardCard>
         </section>
 
         <section className="mt-10">
@@ -413,11 +419,18 @@ export default function Home() {
           </p>
         </section>
 
-        <footer className="mt-10 border-t border-slate-800 pt-6 text-center text-xs text-slate-600">
-          <span className="font-medium text-slate-500">
-            {appMetadata.appName} {appMetadata.version}
-          </span>
-          <span className="ml-2 text-slate-600">{appMetadata.releaseName}</span>
+        <FinancialDefinitions />
+
+        <footer className="mt-10 border-t border-slate-800 pt-6">
+          <p className="text-xs text-slate-500 text-center leading-5">
+            Project Freedom provides planning estimates based on the information you enter. Investment performance, inflation, taxation and personal circumstances will affect real-world outcomes.
+          </p>
+          <div className="mt-4 text-center">
+            <span className="font-medium text-slate-500">
+              {appMetadata.appName} {appMetadata.version}
+            </span>
+            <span className="ml-2 text-slate-600">{appMetadata.releaseName}</span>
+          </div>
         </footer>
       </div>
     </main>

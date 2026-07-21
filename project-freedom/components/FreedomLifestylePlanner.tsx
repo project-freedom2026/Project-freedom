@@ -1,3 +1,5 @@
+import CalculationExplanation from "./CalculationExplanation";
+
 type FreedomLifestylePlannerProps = {
   annualIncome: number;
   withdrawalRate: number;
@@ -65,12 +67,12 @@ export default function FreedomLifestylePlanner({
         </div>
 
         <div className="rounded-2xl bg-slate-800/80 p-5">
-          <label className="text-sm font-medium text-slate-300" htmlFor="withdrawal-rate">
-            Withdrawal rate
+          <label className="text-sm font-medium text-slate-300" htmlFor="withdrawal-assumption">
+            Withdrawal assumption
           </label>
 
           <select
-            id="withdrawal-rate"
+            id="withdrawal-assumption"
             value={withdrawalRate}
             onChange={(event) => onWithdrawalRateChange(Number(event.target.value))}
             className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none"
@@ -81,6 +83,10 @@ export default function FreedomLifestylePlanner({
               </option>
             ))}
           </select>
+
+          <p className="mt-3 text-xs text-slate-500 leading-4">
+            A lower withdrawal assumption generally requires a larger investment portfolio but may increase the likelihood your savings last throughout retirement. A higher withdrawal assumption reduces the required portfolio but increases the risk of depleting savings sooner.
+          </p>
         </div>
       </div>
 
@@ -93,7 +99,7 @@ export default function FreedomLifestylePlanner({
         </div>
 
         <div className="rounded-2xl bg-slate-800/70 p-4">
-          <p className="text-sm text-slate-400">Withdrawal rate</p>
+          <p className="text-sm text-slate-400">Withdrawal assumption</p>
           <p className="mt-2 text-xl font-semibold text-cyan-400">
             {withdrawalRate}%
           </p>
@@ -104,11 +110,14 @@ export default function FreedomLifestylePlanner({
           <p className="mt-2 text-xl font-semibold text-white">
             {formatCurrency(calculatedFreedomNumber)}
           </p>
+          <CalculationExplanation
+            formula="Freedom Number = Annual Lifestyle Goal ÷ Withdrawal Assumption"
+          />
         </div>
       </div>
 
       <p className="mt-4 text-xs leading-5 text-slate-500">
-        Withdrawal rates are planning assumptions and are not guaranteed. Actual retirement outcomes depend on investment performance, inflation, taxes and spending.
+        Withdrawal assumptions are planning assumptions and are not guaranteed. Actual retirement outcomes depend on investment performance, inflation, taxes and spending.
       </p>
     </section>
   );

@@ -1,8 +1,11 @@
+import { ReactNode } from "react";
+
 type DashboardCardProps = {
   title: string;
   value: string;
   subtitle: string;
   highlight?: boolean;
+  children?: ReactNode;
 };
 
 export default function DashboardCard({
@@ -10,6 +13,7 @@ export default function DashboardCard({
   value,
   subtitle,
   highlight = false,
+  children,
 }: DashboardCardProps) {
   return (
     <div className="rounded-2xl bg-slate-900 p-6">
@@ -25,6 +29,8 @@ export default function DashboardCard({
       </p>
 
       <p className="mt-2 text-xs text-slate-500">{subtitle}</p>
+
+      {children}
     </div>
   );
 }
