@@ -8,6 +8,8 @@ import InsightsPanel from "../components/InsightsPanel";
 import MoneyInput from "../components/MoneyInput";
 import MonthlyCheckIn from "../components/MonthlyCheckIn";
 import FreedomProgress from "../components/FreedomProgress";
+import TopNav from "../components/TopNav";
+import SectionHeading from "../components/SectionHeading";
 import CalculationExplanation from "../components/CalculationExplanation";
 import FinancialDefinitions from "../components/FinancialDefinitions";
 import { calculateFreedomNumber } from "../lib/calculateFreedomNumber";
@@ -270,30 +272,115 @@ export default function Home() {
             Welcome Andrew 👋
           </h1>
 
-          <p className="mt-3 text-slate-400">
-            Make your progress visible. Make work optional.
+          <p className="mt-3 max-w-2xl text-slate-400">
+            Make your progress visible. Make work optional. Track assets, liabilities, lifestyle plans, and the date when freedom becomes a realistic milestone.
           </p>
         </header>
 
-        <FreedomProgress
-  progress={freedomProgress}
-  investableWealth={formatCurrency(investableWealth)}
-  amountRemaining={formatCurrency(amountRemaining)}
-  freedomNumber={formatCurrency(effectiveFreedomNumber)}
-  message={motivationalMessage}
-/>
+        <TopNav />
 
-        <FreedomLifestylePlanner
-          annualIncome={data.annualIncome}
-          withdrawalRate={data.withdrawalRate}
-          calculatedFreedomNumber={calculatedFreedomNumber}
-          onAnnualIncomeChange={(value) =>
-            updateLifestyleValue("annualIncome", value)
-          }
-          onWithdrawalRateChange={(value) =>
-            updateLifestyleValue("withdrawalRate", value)
-          }
-        />
+        <section id="overview" className="mt-10 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-5">
+            <FreedomProgress
+              progress={freedomProgress}
+              investableWealth={formatCurrency(investableWealth)}
+              amountRemaining={formatCurrency(amountRemaining)}
+              freedomNumber={formatCurrency(effectiveFreedomNumber)}
+              message={motivationalMessage}
+            />
+
+            <InsightsPanel insights={insights} />
+          </div>
+
+          <div className="space-y-5">
+            <DashboardCard
+              title="Net Worth"
+              value={formatCurrency(netWorth)}
+              subtitle="Assets minus debts"
+            />
+            <DashboardCard
+              title="Investable Wealth"
+              value={formatCurrency(investableWealth)}
+              subtitle="Excludes your home"
+            />
+            <DashboardCard
+              title="Today's Wealth"
+              value={formatCurrency(estimatedDailyGrowth)}
+              subtitle={`Estimated at ${data.annualReturn}% annually`}
+              highlight
+            />
+            <DashboardCard
+              title="Freedom Score"
+              value={`${freedomProgress}%`}
+              subtitle="Progress towards your target"
+            >
+              <CalculationExplanation formula="Freedom Score = Investable Wealth ÷ Freedom Number" />
+            </DashboardCard>
+          </div>
+        </section>
+
+        <section id="assets" className="mt-14">
+          <SectionHeading
+            title="Asset and liability overview"
+            subtitle="Enter your current positions to see how they feed into your investable wealth and freedom runway."
+          />
+
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <MoneyInput
+              label="Pensions"
+              value={data.pension}
+              onChange={(value) => updateValue("pension", value)}
+            />
+
+            <MoneyInput
+              label="Investments"
+              value={data.investments}
+              onChange={(value) => updateValue("investments", value)}
+            />
+
+            <MoneyInput
+              label="Property"
+              value={data.property}
+              onChange={(value) => updateValue("property", value)}
+            />
+
+            <MoneyInput
+              label="Cash and Savings"
+              value={data.cash}
+              onChange={(value) => updateValue("cash", value)}
+            />
+
+            <MoneyInput
+              label="Debts"
+              value={data.debts}
+              onChange={(value) => updateValue("debts", value)}
+            />
+
+            <MoneyInput
+              label="Freedom Number"
+              value={data.freedomNumber}
+              onChange={(value) => updateValue("freedomNumber", value)}
+            />
+          </div>
+        </section>
+
+        <section id="lifestyle" className="mt-14 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+          <FreedomLifestylePlanner
+            annualIncome={data.annualIncome}
+            withdrawalRate={data.withdrawalRate}
+            calculatedFreedomNumber={calculatedFreedomNumber}
+            onAnnualIncomeChange={(value) => updateLifestyleValue("annualIncome", value)}
+            onWithdrawalRateChange={(value) => updateLifestyleValue("withdrawalRate", value)}
+          />
+
+          <FreedomDateEstimator
+            investableWealth={investableWealth}
+            annualContribution={data.annualContribution}
+            annualReturn={data.annualReturn}
+            freedomNumber={effectiveFreedomNumber}
+            onAnnualContributionChange={(value) => updateValue("annualContribution", value)}
+          />
+        </section>
 
         <FreedomDateEstimator
           investableWealth={investableWealth}
@@ -397,36 +484,92 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mt-8 rounded-2xl bg-slate-900 p-6">
-          <label
-            htmlFor="annual-return"
-            className="text-sm font-medium text-slate-300"
-          >
-            Estimated annual investment return
-          </label>
+        <section id="projection" className="mt-8 rounded-2xl border border-slate-800/80 bg-slate-900 p-6 md:p-8">
+          <SectionHeading
+            title="Projection settings"
+            subtitle="Control the assumptions that determine your estimated freedom timeline."
+          />
 
-          <div className="mt-4 flex items-center gap-4">
-            <input
-              id="annual-return"
-              type="range"
-              min="0"
-              max="12"
-              step="0.5"
-              value={data.annualReturn}
-              onChange={(event) =>
-                updateValue("annualReturn", Number(event.target.value))
-              }
-              className="w-full accent-cyan-400"
-            />
+          <div className="mt-6 space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
+              <div className="rounded-2xl bg-slate-800/80 p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <label className="text-sm font-medium text-slate-300" htmlFor="annual-return">
+                    Estimated annual investment return
+                  </label>
+                  <span className="text-lg font-semibold text-cyan-400">
+                    {data.annualReturn}%
+                  </span>
+                </div>
+                <input
+                  id="annual-return"
+                  type="range"
+                  min="0"
+                  max="12"
+                  step="0.5"
+                  value={data.annualReturn}
+                  onChange={(event) => updateValue("annualReturn", Number(event.target.value))}
+                  className="mt-4 w-full accent-cyan-400"
+                />
+                <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                  <span>0%</span>
+                  <span>12%</span>
+                </div>
+              </div>
 
-            <span className="w-16 text-right text-lg font-semibold text-cyan-400">
-              {data.annualReturn}%
-            </span>
+              <div className="rounded-2xl bg-slate-800/80 p-5">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-medium text-slate-300">Annual contribution</p>
+                  <p className="text-lg font-semibold text-cyan-400">{formatCurrency(data.annualContribution)}</p>
+                </div>
+                <input
+                  id="annual-contribution"
+                  type="number"
+                  min="0"
+                  value={data.annualContribution}
+                  onChange={(event) => updateValue("annualContribution", Number(event.target.value))}
+                  className="mt-4 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-2xl bg-slate-800/70 p-4">
+                <p className="text-sm text-slate-400">Investable Wealth</p>
+                <p className="mt-2 text-xl font-semibold text-white">{formatCurrency(investableWealth)}</p>
+              </div>
+              <div className="rounded-2xl bg-slate-800/70 p-4">
+                <p className="text-sm text-slate-400">Freedom Number</p>
+                <p className="mt-2 text-xl font-semibold text-cyan-400">{formatCurrency(effectiveFreedomNumber)}</p>
+              </div>
+              <div className="rounded-2xl bg-slate-800/70 p-4">
+                <p className="text-sm text-slate-400">Estimated target year</p>
+                <p className="mt-2 text-xl font-semibold text-white">
+                  {freedomEstimate.status === "reachable" && freedomEstimate.years !== null
+                    ? `${new Date().getFullYear() + freedomEstimate.years}`
+                    : "Not reachable"}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <p className="mt-3 text-xs text-slate-500">
-            This is an estimate, not a guaranteed return.
+          <p className="mt-4 text-xs leading-5 text-slate-500">
+            These assumptions are for planning only. Actual investment returns and retirement outcomes will vary.
           </p>
+        </section>
+
+        <section id="check-in" className="mt-14">
+          <MonthlyCheckIn
+            pension={data.pension}
+            investments={data.investments}
+            cash={data.cash}
+            debt={data.debts}
+            netWorth={netWorth}
+            freedomScore={freedomProgress}
+            freedomNumber={effectiveFreedomNumber}
+            snapshots={checkIns}
+            onSaveSnapshot={handleSaveSnapshot}
+          />
         </section>
 
         <FinancialDefinitions />
