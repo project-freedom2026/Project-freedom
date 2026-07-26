@@ -15,6 +15,7 @@ import { appMetadata } from "../lib/appMetadata";
 import { estimateFreedomDate } from "../lib/estimateFreedomDate";
 import { generateFinancialInsights } from "../lib/generateFinancialInsights";
 import { MonthlyCheckInSnapshot } from "../lib/monthlyCheckIns";
+import { migrateIfNeeded } from "../lib/migrations/migrateToV2";
 
 type FinancialData = {
   pension: number;
@@ -85,6 +86,15 @@ export default function Home() {
   const [data, setData] = useState<FinancialData>(() => {
     if (typeof window === "undefined") {
       return startingData;
+    }
+
+    // Run storage migration before reading saved data to ensure compatibility
+    try {
+      migrateIfNeeded();
+    } catch (e) {
+      // migration failures should not block app — fall back to legacy read
+      // eslint-disable-next-line no-console
+      console.warn("Migration failed", e);
     }
 
     const savedData = window.localStorage.getItem("project-freedom-data");
