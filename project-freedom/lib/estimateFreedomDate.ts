@@ -22,11 +22,13 @@ export function estimateFreedomDate({
   annualContribution,
   annualReturn,
   freedomNumber,
+  futureIncomeAtYear,
 }: {
   investableWealth: number;
   annualContribution: number;
   annualReturn: number;
   freedomNumber: number;
+  futureIncomeAtYear?: (year: number) => number;
 }): FreedomEstimateResult {
   const safeInvestableWealth = sanitizeNumber(investableWealth);
   const safeAnnualContribution = sanitizeNumber(annualContribution);
@@ -50,9 +52,13 @@ export function estimateFreedomDate({
   }
 
   let balance = safeInvestableWealth;
+  const currentYear = new Date().getFullYear();
 
   for (let years = 0; years <= 100; years += 1) {
-    if (balance >= safeFreedomNumber) {
+    const futureIncome = futureIncomeAtYear?.(currentYear + years) ?? 0;
+    const targetForYear = Math.max(safeFreedomNumber - Math.max(0, futureIncome), 0);
+
+    if (balance >= targetForYear) {
       return {
         status: "reachable",
         years,

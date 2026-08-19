@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.4.0 - First Real Product Experience
+- Added first-run profile onboarding and a consolidated Settings/Profile area.
+- Added versioned future retirement income support, including editable UK State Pension estimates.
+- Added explicit advanced Freedom Number override controls and local data export/import/reset actions.
+- Improved achievement presentation, currency handling, and product metadata.
+
 ## 0.3.2 - Progress History & Monthly Momentum
 - Added historical Freedom Progress charts and real snapshot trend summaries.
 - Extended Monthly Check-Ins with historical projection context and optional notes.

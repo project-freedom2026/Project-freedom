@@ -6,6 +6,6 @@ export type AppMetadata = {
 
 export const appMetadata: AppMetadata = {
   appName: "Project Freedom",
-  version: "0.3.2",
-  releaseName: "Progress History & Monthly Momentum",
+  version: "0.4.0",
+  releaseName: "First Real Product Experience",
 };

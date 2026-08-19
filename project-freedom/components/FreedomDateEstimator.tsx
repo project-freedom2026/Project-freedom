@@ -7,6 +7,7 @@ type FreedomDateEstimatorProps = {
   annualContribution: number;
   annualReturn: number;
   freedomNumber: number;
+  futureIncomeAtYear?: (year: number) => number;
   onAnnualContributionChange: (value: number) => void;
 };
 
@@ -15,8 +16,15 @@ export default function FreedomDateEstimator({
   annualContribution,
   annualReturn,
   freedomNumber,
+  futureIncomeAtYear,
   onAnnualContributionChange,
 }: FreedomDateEstimatorProps) {
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: "GBP",
+      maximumFractionDigits: 0,
+    }).format(value);
   const achievementReached = isFreedomAchieved({
     investableWealth,
     freedomNumber,
@@ -27,6 +35,7 @@ export default function FreedomDateEstimator({
     annualContribution,
     annualReturn,
     freedomNumber,
+    futureIncomeAtYear,
   });
 
   const currentYear = new Date().getFullYear();
@@ -101,14 +110,11 @@ export default function FreedomDateEstimator({
 
       {achievementReached && (
         <div className="mt-6 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 p-6">
-          <h4 className="text-lg font-semibold text-emerald-300">
-            Congratulations!
-          </h4>
-          <p className="mt-2 text-emerald-100">
-            You&apos;ve reached your Freedom Number based on your chosen lifestyle assumptions.
-          </p>
+          <h4 className="text-2xl font-semibold text-emerald-300">You&apos;ve built the freedom.</h4>
+          <p className="mt-2 text-emerald-100">Freedom achieved today. Now you choose what&apos;s next.</p>
+          <div className="mt-4 grid gap-3 text-sm text-emerald-100 sm:grid-cols-3"><span>0 years remaining</span><span>Current: {formatCurrency(investableWealth)}</span><span>Target: {formatCurrency(freedomNumber)}</span></div>
           <p className="mt-3 text-sm text-emerald-200">
-            Work is now optional. Maintain your investments and review your lifestyle assumptions regularly.
+            Project Freedom was built to help you reach this moment. Congratulations.
           </p>
         </div>
       )}

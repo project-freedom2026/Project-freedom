@@ -51,6 +51,16 @@ export type OtherAssetItem = AssetBase & {
   type: "other";
 };
 
+export type FutureIncomeStream = {
+  id: ID;
+  type: "state-pension" | "defined-benefit" | "annuity" | "rental" | "other";
+  name: string;
+  annualAmount: Money;
+  startYear: number;
+  enabled: boolean;
+  notes?: string;
+};
+
 export type FinancialModelV2 = {
   schemaVersion: number;
   currency: Currency;
@@ -61,6 +71,8 @@ export type FinancialModelV2 = {
     preferredCurrency?: Currency;
     annualLifestyleGoal?: Money;
     withdrawalAssumption?: number; // percent
+    manualFreedomNumber?: Money;
+    useManualFreedomNumber?: boolean;
   };
   pensions: PensionItem[];
   investments: InvestmentItem[];
@@ -81,4 +93,5 @@ export type FinancialModelV2 = {
     annualIncome?: number;
     withdrawalRate?: number;
   };
+  futureIncome?: FutureIncomeStream[];
 };

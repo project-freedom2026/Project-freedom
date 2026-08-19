@@ -12,6 +12,7 @@ Helping people understand their financial position, track their progress and mak
 - v0.1.2 — Monthly Freedom Check-In
 - v0.3.1 — Assets, Debts & Overview Completion
 - v0.3.2 — Progress History & Monthly Momentum
+- v0.4.0 — First Real Product Experience
 
 ## Next
 
@@ -24,9 +25,7 @@ Helping people understand their financial position, track their progress and mak
 - User accounts
 - Secure cloud persistence
 - Mobile optimisation
-- Data export
 - Annual Freedom Review
-- Accessibility and usability review
 
 ## Product principles
 

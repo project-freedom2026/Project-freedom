@@ -3,7 +3,7 @@ import { writeJson, getSchemaVersion, setSchemaVersion } from "../storage";
 
 const LEGACY_KEY = "project-freedom-data";
 const MONTHLY_CHECKINS_KEY = "project-freedom-monthly-check-ins";
-const TARGET_VERSION = 2;
+const TARGET_VERSION = 3;
 
 function isFiniteNonNegative(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
@@ -19,7 +19,7 @@ function isV2Model(value: unknown): value is FinancialModelV2 {
   const model = value as Partial<FinancialModelV2>;
   return (
     typeof model.schemaVersion === "number" &&
-    model.schemaVersion >= TARGET_VERSION &&
+    model.schemaVersion >= 2 &&
     Array.isArray(model.pensions) &&
     Array.isArray(model.investments) &&
     Array.isArray(model.cash) &&
@@ -48,6 +48,7 @@ export function migrateIfNeeded(): void {
       debts: [],
       properties: [],
       others: [],
+      futureIncome: [],
     };
 
     if (legacyRaw) {
@@ -55,6 +56,11 @@ export function migrateIfNeeded(): void {
         const parsed: unknown = JSON.parse(legacyRaw);
 
         if (isV2Model(parsed)) {
+          writeJson<FinancialModelV2>(LEGACY_KEY, {
+            ...parsed,
+            schemaVersion: TARGET_VERSION,
+            futureIncome: Array.isArray(parsed.futureIncome) ? parsed.futureIncome : [],
+          });
           setSchemaVersion(TARGET_VERSION);
           return;
         }

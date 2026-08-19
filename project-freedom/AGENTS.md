@@ -8,7 +8,7 @@ This repository is a small Next.js app for a personal finance dashboard. The mai
 - The main dashboard composition lives in [app/page.tsx](app/page.tsx). Reuse existing components from [components/](components/) before introducing new patterns.
 - Calculation and estimation logic should live in [lib/](lib/) rather than inside React components. The retirement estimate logic is currently in [lib/estimateFreedomDate.ts](lib/estimateFreedomDate.ts).
 - Styling uses Tailwind classes and the existing dark, dashboard-style UI. Match that visual tone and spacing when editing components.
-- The active dashboard still consumes the flat V1 `FinancialData` shape defined in [app/page.tsx](app/page.tsx); [types/financial.ts](types/financial.ts) and [lib/migrations/migrateToV2.ts](lib/migrations/migrateToV2.ts) describe a newer V2 collection model that is not yet the page's read format.
+- The active dashboard reads the collection-backed `FinancialModelV2` shape from [types/financial.ts](types/financial.ts), with v3 migration support for future income and profile planning fields.
 
 ## Working conventions
 - Keep TypeScript types explicit and avoid adding dependencies unless they are clearly justified.
