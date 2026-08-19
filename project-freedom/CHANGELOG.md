@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.3.2 - Progress History & Monthly Momentum
+- Added historical Freedom Progress charts and real snapshot trend summaries.
+- Extended Monthly Check-Ins with historical projection context and optional notes.
+- Added monthly momentum and since-start comparisons with backward-compatible snapshot handling.
+
 ## 0.3.1 - Assets, Debts & Overview Completion
 - Added collection-backed asset and debt management with reusable editors.
 - Completed the overview summary with distinct Net Worth and Investable Wealth measures.

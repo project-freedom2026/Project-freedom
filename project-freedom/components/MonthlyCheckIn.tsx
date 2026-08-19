@@ -14,6 +14,11 @@ type MonthlyCheckInProps = {
   netWorth: number;
   freedomScore: number;
   freedomNumber: number;
+  investableWealth: number;
+  freedomDateYears: number | null;
+  freedomDateStatus: "already-reached" | "reachable" | "unreachable";
+  withdrawalRate: number;
+  annualLifestyleGoal: number;
   snapshots: MonthlyCheckInSnapshot[];
   onSaveSnapshot: (snapshot: MonthlyCheckInSnapshot) => void;
 };
@@ -33,10 +38,16 @@ export default function MonthlyCheckIn({
   netWorth,
   freedomScore,
   freedomNumber,
+  investableWealth,
+  freedomDateYears,
+  freedomDateStatus,
+  withdrawalRate,
+  annualLifestyleGoal,
   snapshots,
   onSaveSnapshot,
 }: MonthlyCheckInProps) {
   const [isSaved, setIsSaved] = useState(false);
+  const [note, setNote] = useState("");
 
   const sortedSnapshots = useMemo(() => sortSnapshotsByDate(snapshots), [snapshots]);
   const recentSnapshots = sortedSnapshots.slice(0, 5);
@@ -49,6 +60,9 @@ export default function MonthlyCheckIn({
     latestSnapshot && previousSnapshot
       ? calculateSnapshotChanges(latestSnapshot, previousSnapshot)
       : null;
+  const freedomDateChange = latestSnapshot?.freedomDateYears !== null && latestSnapshot?.freedomDateYears !== undefined && previousSnapshot?.freedomDateYears !== null && previousSnapshot?.freedomDateYears !== undefined
+    ? latestSnapshot.freedomDateYears - previousSnapshot.freedomDateYears
+    : null;
 
   const handleSave = () => {
     const snapshot: MonthlyCheckInSnapshot = {
@@ -61,6 +75,12 @@ export default function MonthlyCheckIn({
       netWorth,
       freedomScore,
       freedomNumber,
+      investableWealth,
+      freedomDateYears,
+      freedomDateStatus,
+      withdrawalRate,
+      annualLifestyleGoal,
+      note: note.trim() || undefined,
     };
 
     onSaveSnapshot(snapshot);
@@ -88,6 +108,21 @@ export default function MonthlyCheckIn({
         >
           {alreadySavedToday ? "Update Today’s Check-In" : "+ Save Monthly Check-In"}
         </button>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-800/60 p-4">
+        <h4 className="text-lg font-semibold text-white">This check-in will capture</h4>
+        <div className="mt-3 grid gap-3 text-sm text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
+          <span>Investable Wealth: {formatCurrency(investableWealth)}</span>
+          <span>Net Worth: {formatCurrency(netWorth)}</span>
+          <span>Freedom Progress: {freedomScore}%</span>
+          <span>Freedom Date: {freedomDateStatus === "already-reached" ? "Achieved" : freedomDateYears === null ? "Not reachable" : `${freedomDateYears} years`}</span>
+        </div>
+        <label className="mt-4 block text-sm text-slate-300" htmlFor="check-in-note">
+          Note (optional)
+          <textarea id="check-in-note" value={note} maxLength={240} onChange={(event) => setNote(event.target.value)} rows={2} placeholder="What changed this month?" className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30" />
+          <span className="mt-1 block text-xs text-slate-500">{note.length}/240</span>
+        </label>
       </div>
 
       {isSaved ? (
@@ -141,6 +176,10 @@ export default function MonthlyCheckIn({
           <h4 className="text-lg font-semibold text-white">Change since previous check-in</h4>
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-2xl bg-slate-900/70 p-3">
+              <p className="text-sm text-slate-400">Investable Wealth</p>
+              <p className="mt-1 text-lg font-semibold text-white">{changes.investableWealth >= 0 ? "+" : ""}{formatCurrency(changes.investableWealth)}</p>
+            </div>
+            <div className="rounded-2xl bg-slate-900/70 p-3">
               <p className="text-sm text-slate-400">Net Worth</p>
               <p className="mt-1 text-lg font-semibold text-white">
                 {changes.netWorth >= 0 ? "+" : ""}{formatCurrency(changes.netWorth)}
@@ -151,6 +190,10 @@ export default function MonthlyCheckIn({
               <p className="mt-1 text-lg font-semibold text-white">
                 {changes.pension >= 0 ? "+" : ""}{formatCurrency(changes.pension)}
               </p>
+            </div>
+            <div className="rounded-2xl bg-slate-900/70 p-3">
+              <p className="text-sm text-slate-400">Investments</p>
+              <p className="mt-1 text-lg font-semibold text-white">{changes.investments >= 0 ? "+" : ""}{formatCurrency(changes.investments)}</p>
             </div>
             <div className="rounded-2xl bg-slate-900/70 p-3">
               <p className="text-sm text-slate-400">Cash</p>
@@ -165,6 +208,8 @@ export default function MonthlyCheckIn({
               </p>
             </div>
           </div>
+          <p className="mt-4 text-sm text-slate-300">Freedom Progress: {changes.freedomScore >= 0 ? "+" : ""}{changes.freedomScore.toFixed(1)}%</p>
+          {freedomDateChange !== null && freedomDateChange !== 0 && <p className="mt-2 text-sm text-slate-400">Your estimated Freedom Date moved approximately {Math.abs(Math.round(freedomDateChange * 12))} months {freedomDateChange < 0 ? "closer" : "later"}.</p>}
         </div>
       ) : null}
     </section>
