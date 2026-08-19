@@ -1,591 +1,91 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AssetsDebtsSection from "../components/assets/AssetsDebtsSection";
+import CalculationExplanation from "../components/CalculationExplanation";
 import DashboardCard from "../components/DashboardCard";
+import FinancialDefinitions from "../components/FinancialDefinitions";
 import FreedomDateEstimator from "../components/FreedomDateEstimator";
 import FreedomLifestylePlanner from "../components/FreedomLifestylePlanner";
-import InsightsPanel from "../components/InsightsPanel";
-import MoneyInput from "../components/MoneyInput";
-import MonthlyCheckIn from "../components/MonthlyCheckIn";
 import FreedomProgress from "../components/FreedomProgress";
-import TopNav from "../components/TopNav";
+import InsightsPanel from "../components/InsightsPanel";
+import MonthlyCheckIn from "../components/MonthlyCheckIn";
 import SectionHeading from "../components/SectionHeading";
-import CalculationExplanation from "../components/CalculationExplanation";
-import FinancialDefinitions from "../components/FinancialDefinitions";
-import { calculateFreedomNumber } from "../lib/calculateFreedomNumber";
+import TopNav from "../components/TopNav";
 import { appMetadata } from "../lib/appMetadata";
+import { calculateFreedomNumber } from "../lib/calculateFreedomNumber";
 import { estimateFreedomDate } from "../lib/estimateFreedomDate";
+import { getFinancialTotals } from "../lib/financialTotals";
 import { generateFinancialInsights } from "../lib/generateFinancialInsights";
 import { MonthlyCheckInSnapshot } from "../lib/monthlyCheckIns";
 import { migrateIfNeeded } from "../lib/migrations/migrateToV2";
+import { readJson, writeJson } from "../lib/storage";
+import { FinancialModelV2 } from "../types/financial";
 
-type FinancialData = {
-  pension: number;
-  investments: number;
-  property: number;
-  cash: number;
-  debts: number;
-  freedomNumber: number;
-  annualReturn: number;
-  annualContribution: number;
-  annualIncome: number;
-  withdrawalRate: number;
-};
-
-const startingData: FinancialData = {
-  pension: 118000,
-  investments: 6000,
-  property: 400000,
-  cash: 0,
-  debts: 0,
-  freedomNumber: calculateFreedomNumber({
-    annualIncome: 30000,
-    withdrawalRate: 4,
-  }),
-  annualReturn: 7,
-  annualContribution: 0,
-  annualIncome: 30000,
-  withdrawalRate: 4,
-};
-
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-GB", {
-    style: "currency",
-    currency: "GBP",
-    maximumFractionDigits: 0,
-  }).format(value);
-
-const sanitizeFinancialValue = (value: number | null | undefined): number => {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return 0;
-  }
-
-  return Math.max(0, value);
-};
-
-const normalizeFinancialData = (value: Partial<FinancialData> | null | undefined): FinancialData => ({
-  pension: sanitizeFinancialValue(value?.pension),
-  investments: sanitizeFinancialValue(value?.investments),
-  property: sanitizeFinancialValue(value?.property),
-  cash: sanitizeFinancialValue(value?.cash),
-  debts: sanitizeFinancialValue(value?.debts),
-  freedomNumber: sanitizeFinancialValue(value?.freedomNumber),
-  annualReturn: sanitizeFinancialValue(value?.annualReturn),
-  annualContribution: sanitizeFinancialValue(value?.annualContribution),
-  annualIncome:
-    typeof value?.annualIncome === "number" && Number.isFinite(value.annualIncome)
-      ? sanitizeFinancialValue(value.annualIncome)
-      : startingData.annualIncome,
-  withdrawalRate:
-    typeof value?.withdrawalRate === "number" && Number.isFinite(value.withdrawalRate)
-      ? sanitizeFinancialValue(value.withdrawalRate)
-      : startingData.withdrawalRate,
-});
-
+const storageKey = "project-freedom-data";
 const monthlyCheckInStorageKey = "project-freedom-monthly-check-ins";
+const formatCurrency = (value: number) => new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(value);
+
+const startingModel: FinancialModelV2 = {
+  schemaVersion: 2,
+  currency: "GBP",
+  profile: { annualLifestyleGoal: 30000, withdrawalAssumption: 4 },
+  pensions: [{ id: "starter-pension", name: "Existing Pension", value: 118000, type: "pension" }],
+  investments: [{ id: "starter-investments", name: "Existing Investments", value: 6000, type: "investment" }],
+  cash: [],
+  debts: [],
+  properties: [{ id: "starter-property", name: "Primary residence", value: 400000, type: "property", outstandingMortgage: 0, isPrimaryResidence: true, includeInInvestableWealth: false }],
+  others: [],
+  legacy: { pension: 118000, investments: 6000, property: 400000, cash: 0, debts: 0, freedomNumber: calculateFreedomNumber({ annualIncome: 30000, withdrawalRate: 4 }), annualReturn: 7, annualContribution: 0, annualIncome: 30000, withdrawalRate: 4 },
+};
+
+const isModel = (value: unknown): value is FinancialModelV2 => {
+  if (!value || typeof value !== "object") return false;
+  const model = value as Partial<FinancialModelV2>;
+  return typeof model.schemaVersion === "number" && model.schemaVersion >= 2 && Array.isArray(model.pensions) && Array.isArray(model.investments) && Array.isArray(model.cash) && Array.isArray(model.debts) && Array.isArray(model.properties) && Array.isArray(model.others);
+};
+
+const safeNumber = (value: number | undefined, fallback: number) => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : fallback;
 
 export default function Home() {
-  const [data, setData] = useState<FinancialData>(() => {
-    if (typeof window === "undefined") {
-      return startingData;
-    }
-
-    // Run storage migration before reading saved data to ensure compatibility
-    try {
-      migrateIfNeeded();
-    } catch (e) {
-      // migration failures should not block app — fall back to legacy read
-      // eslint-disable-next-line no-console
-      console.warn("Migration failed", e);
-    }
-
-    const savedData = window.localStorage.getItem("project-freedom-data");
-
-    if (!savedData) {
-      return startingData;
-    }
-
-    try {
-      const parsedData = JSON.parse(savedData) as Partial<FinancialData>;
-      return normalizeFinancialData(parsedData);
-    } catch {
-      console.error("Project Freedom data could not be loaded.");
-      return startingData;
-    }
+  const [model, setModel] = useState<FinancialModelV2>(() => {
+    if (typeof window === "undefined") return startingModel;
+    migrateIfNeeded();
+    const saved = readJson<unknown>(storageKey);
+    return isModel(saved) ? saved : startingModel;
   });
-
   const [checkIns, setCheckIns] = useState<MonthlyCheckInSnapshot[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    const savedCheckIns = window.localStorage.getItem(monthlyCheckInStorageKey);
-
-    if (!savedCheckIns) {
-      return [];
-    }
-
-    try {
-      return JSON.parse(savedCheckIns) as MonthlyCheckInSnapshot[];
-    } catch {
-      console.error("Project Freedom monthly check-ins could not be loaded.");
-      return [];
-    }
+    if (typeof window === "undefined") return [];
+    return readJson<MonthlyCheckInSnapshot[]>(monthlyCheckInStorageKey) ?? [];
   });
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem("project-freedom-data", JSON.stringify(data));
-    }
-  }, [data]);
+  useEffect(() => { writeJson(storageKey, model); }, [model]);
+  useEffect(() => { writeJson(monthlyCheckInStorageKey, checkIns); }, [checkIns]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(monthlyCheckInStorageKey, JSON.stringify(checkIns));
-    }
-  }, [checkIns]);
+  const legacy = model.legacy ?? {};
+  const annualIncome = safeNumber(model.profile?.annualLifestyleGoal ?? legacy.annualIncome, 30000);
+  const withdrawalRate = safeNumber(model.profile?.withdrawalAssumption ?? legacy.withdrawalRate, 4);
+  const annualReturn = safeNumber(legacy.annualReturn, 7);
+  const annualContribution = safeNumber(legacy.annualContribution, 0);
+  const configuredFreedomNumber = safeNumber(legacy.freedomNumber, 0);
+  const calculatedFreedomNumber = calculateFreedomNumber({ annualIncome, withdrawalRate });
+  const effectiveFreedomNumber = configuredFreedomNumber > 0 ? configuredFreedomNumber : calculatedFreedomNumber;
+  const totals = getFinancialTotals(model);
+  const freedomProgress = effectiveFreedomNumber > 0 ? Math.round((totals.investableWealth / effectiveFreedomNumber) * 100) : 0;
+  const amountRemaining = Math.max(effectiveFreedomNumber - totals.investableWealth, 0);
+  const freedomEstimate = estimateFreedomDate({ investableWealth: totals.investableWealth, annualContribution, annualReturn, freedomNumber: effectiveFreedomNumber });
+  const insights = generateFinancialInsights({ pension: totals.pension, investments: totals.investments, property: totals.propertyEquity, cash: totals.cash, debts: totals.debts, annualContribution, annualReturn, freedomNumber: effectiveFreedomNumber, investableWealth: totals.investableWealth, netWorth: totals.netWorth, freedomProgress, estimatedFreedomYears: freedomEstimate.years, estimatedFreedomStatus: freedomEstimate.status });
+  const latestCheckIn = [...checkIns].sort((left, right) => right.date.localeCompare(left.date))[0];
+  const featuredInsight = insights[0];
+  const updatePlan = (field: "annualIncome" | "withdrawalRate", value: number) => setModel((current) => ({ ...current, profile: { ...current.profile, annualLifestyleGoal: field === "annualIncome" ? Math.max(0, value) : current.profile?.annualLifestyleGoal, withdrawalAssumption: field === "withdrawalRate" ? Math.max(0, value) : current.profile?.withdrawalAssumption } }));
+  const updateProjection = (field: "annualReturn" | "annualContribution", value: number) => setModel((current) => ({ ...current, legacy: { ...current.legacy, [field]: Math.max(0, value) } }));
+  const saveSnapshot = (snapshot: MonthlyCheckInSnapshot) => setCheckIns((current) => { const index = current.findIndex((item) => item.date === snapshot.date); if (index < 0) return [snapshot, ...current]; const next = [...current]; next[index] = snapshot; return next; });
 
-  const updateValue = (field: keyof FinancialData, value: number) => {
-    setData((currentData) => ({
-      ...currentData,
-      [field]: sanitizeFinancialValue(value),
-    }));
-  };
-
-  const updateLifestyleValue = (
-    field: "annualIncome" | "withdrawalRate",
-    value: number,
-  ) => {
-    setData((currentData) => {
-      const nextAnnualIncome =
-        field === "annualIncome"
-          ? sanitizeFinancialValue(value)
-          : currentData.annualIncome;
-      const nextWithdrawalRate =
-        field === "withdrawalRate"
-          ? sanitizeFinancialValue(value)
-          : currentData.withdrawalRate;
-
-      const nextFreedomNumber = calculateFreedomNumber({
-        annualIncome: nextAnnualIncome,
-        withdrawalRate: nextWithdrawalRate,
-      });
-
-      return {
-        ...currentData,
-        annualIncome: nextAnnualIncome,
-        withdrawalRate: nextWithdrawalRate,
-        freedomNumber: nextFreedomNumber,
-      };
-    });
-  };
-
-  const netWorth =
-    data.pension +
-    data.investments +
-    data.property +
-    data.cash -
-    data.debts;
-
-  const investableWealth =
-    data.pension + data.investments + data.cash - data.debts;
-
-  const calculatedFreedomNumber = calculateFreedomNumber({
-    annualIncome: data.annualIncome,
-    withdrawalRate: data.withdrawalRate,
-  });
-
-  const effectiveFreedomNumber =
-    data.freedomNumber > 0 ? data.freedomNumber : calculatedFreedomNumber;
-
-  const freedomProgress =
-    effectiveFreedomNumber > 0
-      ? Math.round((investableWealth / effectiveFreedomNumber) * 100)
-      : 0;
-
-  const estimatedDailyGrowth =
-    ((data.pension + data.investments + data.cash) *
-      (data.annualReturn / 100)) /
-    365;
-
-  const amountRemaining = Math.max(effectiveFreedomNumber - investableWealth, 0);
-
-  const motivationalMessage =
-    investableWealth >= effectiveFreedomNumber
-      ? "You've built the freedom. Now you choose what's next."
-      : investableWealth >= (effectiveFreedomNumber * 0.75)
-        ? "Freedom is firmly in sight."
-        : investableWealth >= (effectiveFreedomNumber * 0.5)
-          ? "You have already built a powerful financial foundation."
-          : investableWealth >= (effectiveFreedomNumber * 0.25)
-            ? "Momentum is building. Keep moving forward."
-            : "Every contribution moves you closer to freedom.";
-
-  const freedomEstimate = estimateFreedomDate({
-    investableWealth,
-    annualContribution: data.annualContribution,
-    annualReturn: data.annualReturn,
-    freedomNumber: effectiveFreedomNumber,
-  });
-
-  const handleSaveSnapshot = (snapshot: MonthlyCheckInSnapshot) => {
-    setCheckIns((currentCheckIns) => {
-      const existingIndex = currentCheckIns.findIndex(
-        (item) => item.date === snapshot.date,
-      );
-
-      if (existingIndex >= 0) {
-        const updatedCheckIns = [...currentCheckIns];
-        updatedCheckIns[existingIndex] = snapshot;
-        return updatedCheckIns;
-      }
-
-      return [snapshot, ...currentCheckIns];
-    });
-  };
-
-  const insights = generateFinancialInsights({
-    pension: data.pension,
-    investments: data.investments,
-    property: data.property,
-    cash: data.cash,
-    debts: data.debts,
-    annualContribution: data.annualContribution,
-    annualReturn: data.annualReturn,
-    freedomNumber: effectiveFreedomNumber,
-    investableWealth,
-    netWorth,
-    freedomProgress,
-    estimatedFreedomYears: freedomEstimate.years,
-    estimatedFreedomStatus: freedomEstimate.status,
-  });
-
-  return (
-    <main className="min-h-screen bg-slate-950 px-5 py-10 text-white md:px-10">
-      <div className="mx-auto max-w-6xl">
-        <header>
-          <p className="text-sm uppercase tracking-[0.3em] text-cyan-400">
-            Project Freedom
-          </p>
-
-          <h1 className="mt-4 text-4xl font-bold md:text-5xl">
-            Welcome Andrew 👋
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-slate-400">
-            Make your progress visible. Make work optional. Track assets, liabilities, lifestyle plans, and the date when freedom becomes a realistic milestone.
-          </p>
-        </header>
-
-        <TopNav />
-
-        <section id="overview" className="mt-10 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-5">
-            <FreedomProgress
-              progress={freedomProgress}
-              investableWealth={formatCurrency(investableWealth)}
-              amountRemaining={formatCurrency(amountRemaining)}
-              freedomNumber={formatCurrency(effectiveFreedomNumber)}
-              message={motivationalMessage}
-            />
-
-            <InsightsPanel insights={insights} />
-          </div>
-
-          <div className="space-y-5">
-            <DashboardCard
-              title="Net Worth"
-              value={formatCurrency(netWorth)}
-              subtitle="Assets minus debts"
-            />
-            <DashboardCard
-              title="Investable Wealth"
-              value={formatCurrency(investableWealth)}
-              subtitle="Excludes your home"
-            />
-            <DashboardCard
-              title="Today's Wealth"
-              value={formatCurrency(estimatedDailyGrowth)}
-              subtitle={`Estimated at ${data.annualReturn}% annually`}
-              highlight
-            />
-            <DashboardCard
-              title="Freedom Score"
-              value={`${freedomProgress}%`}
-              subtitle="Progress towards your target"
-            >
-              <CalculationExplanation formula="Freedom Score = Investable Wealth ÷ Freedom Number" />
-            </DashboardCard>
-          </div>
-        </section>
-
-        <section id="assets" className="mt-14">
-          <SectionHeading
-            title="Asset and liability overview"
-            subtitle="Enter your current positions to see how they feed into your investable wealth and freedom runway."
-          />
-
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            <MoneyInput
-              label="Pensions"
-              value={data.pension}
-              onChange={(value) => updateValue("pension", value)}
-            />
-
-            <MoneyInput
-              label="Investments"
-              value={data.investments}
-              onChange={(value) => updateValue("investments", value)}
-            />
-
-            <MoneyInput
-              label="Property"
-              value={data.property}
-              onChange={(value) => updateValue("property", value)}
-            />
-
-            <MoneyInput
-              label="Cash and Savings"
-              value={data.cash}
-              onChange={(value) => updateValue("cash", value)}
-            />
-
-            <MoneyInput
-              label="Debts"
-              value={data.debts}
-              onChange={(value) => updateValue("debts", value)}
-            />
-
-            <MoneyInput
-              label="Freedom Number"
-              value={data.freedomNumber}
-              onChange={(value) => updateValue("freedomNumber", value)}
-            />
-          </div>
-        </section>
-
-        <section id="lifestyle" className="mt-14 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-          <FreedomLifestylePlanner
-            annualIncome={data.annualIncome}
-            withdrawalRate={data.withdrawalRate}
-            calculatedFreedomNumber={calculatedFreedomNumber}
-            onAnnualIncomeChange={(value) => updateLifestyleValue("annualIncome", value)}
-            onWithdrawalRateChange={(value) => updateLifestyleValue("withdrawalRate", value)}
-          />
-
-          <FreedomDateEstimator
-            investableWealth={investableWealth}
-            annualContribution={data.annualContribution}
-            annualReturn={data.annualReturn}
-            freedomNumber={effectiveFreedomNumber}
-            onAnnualContributionChange={(value) => updateValue("annualContribution", value)}
-          />
-        </section>
-
-        <FreedomDateEstimator
-          investableWealth={investableWealth}
-          annualContribution={data.annualContribution}
-          annualReturn={data.annualReturn}
-          freedomNumber={effectiveFreedomNumber}
-          onAnnualContributionChange={(value) =>
-            updateValue("annualContribution", value)
-          }
-        />
-
-        <InsightsPanel insights={insights} />
-
-        <MonthlyCheckIn
-          pension={data.pension}
-          investments={data.investments}
-          cash={data.cash}
-          debt={data.debts}
-          netWorth={netWorth}
-          freedomScore={freedomProgress}
-          freedomNumber={effectiveFreedomNumber}
-          snapshots={checkIns}
-          onSaveSnapshot={handleSaveSnapshot}
-        />
-
-        <section className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          <DashboardCard
-            title="Net Worth"
-            value={formatCurrency(netWorth)}
-            subtitle="Assets minus debts"
-          />
-
-          <DashboardCard
-            title="Investable Wealth"
-            value={formatCurrency(investableWealth)}
-            subtitle="Excludes your home"
-          />
-
-          <DashboardCard
-  title="Today's Wealth"
-  value={formatCurrency(estimatedDailyGrowth)}
-  subtitle={"Estimated at " + data.annualReturn + "% annually"}
-  highlight
-/>
-
-          <DashboardCard
-  title="Freedom Score"
-  value={freedomProgress + "%"}
-  subtitle="Progress towards your target"
->
-            <CalculationExplanation
-              formula="Freedom Score = Investable Wealth ÷ Freedom Number"
-            />
-          </DashboardCard>
-        </section>
-
-        <section className="mt-10">
-          <div className="mb-5">
-            <h2 className="text-2xl font-bold">Your Financial Picture</h2>
-            <p className="mt-1 text-sm text-slate-400">
-              Change any number and the dashboard updates instantly.
-            </p>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            <MoneyInput
-              label="Pensions"
-              value={data.pension}
-              onChange={(value) => updateValue("pension", value)}
-            />
-
-            <MoneyInput
-              label="Investments"
-              value={data.investments}
-              onChange={(value) => updateValue("investments", value)}
-            />
-
-            <MoneyInput
-              label="Property"
-              value={data.property}
-              onChange={(value) => updateValue("property", value)}
-            />
-
-            <MoneyInput
-              label="Cash and Savings"
-              value={data.cash}
-              onChange={(value) => updateValue("cash", value)}
-            />
-
-            <MoneyInput
-              label="Debts"
-              value={data.debts}
-              onChange={(value) => updateValue("debts", value)}
-            />
-
-            <MoneyInput
-              label="Freedom Number"
-              value={data.freedomNumber}
-              onChange={(value) => updateValue("freedomNumber", value)}
-            />
-          </div>
-        </section>
-
-        <section id="projection" className="mt-8 rounded-2xl border border-slate-800/80 bg-slate-900 p-6 md:p-8">
-          <SectionHeading
-            title="Projection settings"
-            subtitle="Control the assumptions that determine your estimated freedom timeline."
-          />
-
-          <div className="mt-6 space-y-6">
-            <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-              <div className="rounded-2xl bg-slate-800/80 p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <label className="text-sm font-medium text-slate-300" htmlFor="annual-return">
-                    Estimated annual investment return
-                  </label>
-                  <span className="text-lg font-semibold text-cyan-400">
-                    {data.annualReturn}%
-                  </span>
-                </div>
-                <input
-                  id="annual-return"
-                  type="range"
-                  min="0"
-                  max="12"
-                  step="0.5"
-                  value={data.annualReturn}
-                  onChange={(event) => updateValue("annualReturn", Number(event.target.value))}
-                  className="mt-4 w-full accent-cyan-400"
-                />
-                <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                  <span>0%</span>
-                  <span>12%</span>
-                </div>
-              </div>
-
-              <div className="rounded-2xl bg-slate-800/80 p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-sm font-medium text-slate-300">Annual contribution</p>
-                  <p className="text-lg font-semibold text-cyan-400">{formatCurrency(data.annualContribution)}</p>
-                </div>
-                <input
-                  id="annual-contribution"
-                  type="number"
-                  min="0"
-                  value={data.annualContribution}
-                  onChange={(event) => updateValue("annualContribution", Number(event.target.value))}
-                  className="mt-4 w-full rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-white outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-2xl bg-slate-800/70 p-4">
-                <p className="text-sm text-slate-400">Investable Wealth</p>
-                <p className="mt-2 text-xl font-semibold text-white">{formatCurrency(investableWealth)}</p>
-              </div>
-              <div className="rounded-2xl bg-slate-800/70 p-4">
-                <p className="text-sm text-slate-400">Freedom Number</p>
-                <p className="mt-2 text-xl font-semibold text-cyan-400">{formatCurrency(effectiveFreedomNumber)}</p>
-              </div>
-              <div className="rounded-2xl bg-slate-800/70 p-4">
-                <p className="text-sm text-slate-400">Estimated target year</p>
-                <p className="mt-2 text-xl font-semibold text-white">
-                  {freedomEstimate.status === "reachable" && freedomEstimate.years !== null
-                    ? `${new Date().getFullYear() + freedomEstimate.years}`
-                    : "Not reachable"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <p className="mt-4 text-xs leading-5 text-slate-500">
-            These assumptions are for planning only. Actual investment returns and retirement outcomes will vary.
-          </p>
-        </section>
-
-        <section id="check-in" className="mt-14">
-          <MonthlyCheckIn
-            pension={data.pension}
-            investments={data.investments}
-            cash={data.cash}
-            debt={data.debts}
-            netWorth={netWorth}
-            freedomScore={freedomProgress}
-            freedomNumber={effectiveFreedomNumber}
-            snapshots={checkIns}
-            onSaveSnapshot={handleSaveSnapshot}
-          />
-        </section>
-
-        <FinancialDefinitions />
-
-        <footer className="mt-10 border-t border-slate-800 pt-6">
-          <p className="text-xs text-slate-500 text-center leading-5">
-            Project Freedom provides planning estimates based on the information you enter. Investment performance, inflation, taxation and personal circumstances will affect real-world outcomes.
-          </p>
-          <div className="mt-4 text-center">
-            <span className="font-medium text-slate-500">
-              {appMetadata.appName} {appMetadata.version}
-            </span>
-            <span className="ml-2 text-slate-600">{appMetadata.releaseName}</span>
-          </div>
-        </footer>
-      </div>
-    </main>
-  );
+  return <main className="min-h-screen bg-slate-950 px-5 py-10 text-white md:px-10"><div className="mx-auto max-w-6xl"><header><p className="text-sm uppercase tracking-[0.3em] text-cyan-400">Project Freedom</p><h1 className="mt-4 text-4xl font-bold md:text-5xl">Your path to financial freedom</h1><p className="mt-3 max-w-2xl text-slate-400">Make your progress visible. Keep your financial picture clear, calm and actionable.</p></header><TopNav />
+    <section id="overview" className="mt-10" aria-labelledby="overview-heading"><div className="mb-5"><p className="text-sm uppercase tracking-[0.2em] text-cyan-400">Overview</p><h2 id="overview-heading" className="mt-2 text-3xl font-bold">Your position at a glance</h2></div><div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><DashboardCard title="Investable Wealth" value={formatCurrency(totals.investableWealth)} subtitle="Available to support your retirement plan" /><DashboardCard title="Total Net Worth" value={formatCurrency(totals.netWorth)} subtitle="All assets and liabilities included" /><DashboardCard title="Freedom Number" value={formatCurrency(effectiveFreedomNumber)} subtitle="Your target based on lifestyle assumptions" /><DashboardCard title="Freedom Date" value={freedomEstimate.status === "already-reached" ? "Achieved" : freedomEstimate.years === null ? "Not reachable" : `${new Date().getFullYear() + freedomEstimate.years}`} subtitle={freedomEstimate.status === "already-reached" ? "Your investable wealth clears the target" : "Planning estimate, not a guarantee"} /></div><div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]"><FreedomProgress progress={freedomProgress} investableWealth={formatCurrency(totals.investableWealth)} amountRemaining={formatCurrency(amountRemaining)} freedomNumber={formatCurrency(effectiveFreedomNumber)} message={freedomProgress >= 100 ? "You've built the freedom. Now you choose what's next." : "Every contribution moves you closer to freedom."} /><div className="space-y-4">{latestCheckIn && <DashboardCard title="Since latest check-in" value={`${totals.netWorth - latestCheckIn.netWorth >= 0 ? "+" : ""}${formatCurrency(totals.netWorth - latestCheckIn.netWorth)}`} subtitle={`Compared with ${latestCheckIn.date}`} />}{featuredInsight && <article id="insights" className="rounded-2xl border border-cyan-500/20 bg-slate-900 p-6"><p className="text-sm text-cyan-300">Featured insight</p><h3 className="mt-2 text-xl font-semibold">{featuredInsight.title}</h3><p className="mt-2 text-sm leading-6 text-slate-400">{featuredInsight.message}</p></article>}</div></div></section>
+    <AssetsDebtsSection model={model} onChange={setModel} formatCurrency={formatCurrency} />
+    <section id="lifestyle" className="mt-14 grid gap-5 xl:grid-cols-[1.05fr_0.95fr]"><FreedomLifestylePlanner annualIncome={annualIncome} withdrawalRate={withdrawalRate} calculatedFreedomNumber={calculatedFreedomNumber} onAnnualIncomeChange={(value) => updatePlan("annualIncome", value)} onWithdrawalRateChange={(value) => updatePlan("withdrawalRate", value)} /><FreedomDateEstimator investableWealth={totals.investableWealth} annualContribution={annualContribution} annualReturn={annualReturn} freedomNumber={effectiveFreedomNumber} onAnnualContributionChange={(value) => updateProjection("annualContribution", value)} /></section>
+    <section id="projection" className="mt-8 rounded-2xl border border-slate-800/80 bg-slate-900 p-6 md:p-8"><SectionHeading title="Projection settings" subtitle="Control the assumptions that determine your estimated freedom timeline." /><div className="mt-6 grid gap-6 md:grid-cols-2"><label className="rounded-2xl bg-slate-800/80 p-5 text-sm text-slate-300" htmlFor="annual-return">Estimated annual investment return <strong className="float-right text-cyan-400">{annualReturn}%</strong><input id="annual-return" type="range" min="0" max="12" step="0.5" value={annualReturn} onChange={(event) => updateProjection("annualReturn", Number(event.target.value))} className="mt-4 w-full accent-cyan-400" /></label><label className="rounded-2xl bg-slate-800/80 p-5 text-sm text-slate-300" htmlFor="annual-contribution">Annual contribution<input id="annual-contribution" type="number" min="0" value={annualContribution} onChange={(event) => updateProjection("annualContribution", Number(event.target.value))} className="mt-3 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30" /></label></div><div className="mt-5 grid gap-4 md:grid-cols-3"><DashboardCard title="Investable Wealth" value={formatCurrency(totals.investableWealth)} subtitle="Current position" /><DashboardCard title="Freedom Score" value={`${freedomProgress}%`} subtitle="Investable Wealth / Freedom Number"><CalculationExplanation formula="Freedom Score = Investable Wealth ÷ Freedom Number" /></DashboardCard><DashboardCard title="Target year" value={freedomEstimate.years === null ? "Not reachable" : `${new Date().getFullYear() + freedomEstimate.years}`} subtitle="Based on current assumptions" /></div></section>
+    <section id="check-in" className="mt-14"><MonthlyCheckIn pension={totals.pension} investments={totals.investments} cash={totals.cash} debt={totals.debts} netWorth={totals.netWorth} freedomScore={freedomProgress} freedomNumber={effectiveFreedomNumber} snapshots={checkIns} onSaveSnapshot={saveSnapshot} /></section><InsightsPanel insights={insights} /><FinancialDefinitions /><footer id="settings" className="mt-10 border-t border-slate-800 pt-6 text-center"><p className="text-xs leading-5 text-slate-500">Project Freedom provides planning estimates based on the information you enter. Investment performance, inflation, taxation and personal circumstances will affect real-world outcomes.</p><p className="mt-4 text-xs text-slate-500">{appMetadata.appName} {appMetadata.version} · {appMetadata.releaseName}</p></footer>
+  </div></main>;
 }

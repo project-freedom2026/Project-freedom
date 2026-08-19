@@ -96,7 +96,7 @@ export default function MonthlyCheckIn({
         </p>
       ) : null}
 
-      <div className="mt-6 rounded-2xl bg-slate-800/80 p-4">
+      <div id="history" className="mt-6 rounded-2xl bg-slate-800/80 p-4">
         <div className="flex items-center justify-between gap-3">
           <h4 className="text-lg font-semibold text-white">Recent check-ins</h4>
           <span className="text-sm text-slate-400">Newest first</span>

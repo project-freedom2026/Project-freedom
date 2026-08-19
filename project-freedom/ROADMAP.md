@@ -10,11 +10,10 @@ Helping people understand their financial position, track their progress and mak
 - v0.1.0 — Financial Insights
 - v0.1.1 — Freedom Lifestyle Planner
 - v0.1.2 — Monthly Freedom Check-In
+- v0.3.1 — Assets, Debts & Overview Completion
 
 ## Next
 
-- Multiple pensions and investment accounts
-- Multiple properties, including buy-to-let
 - Monthly historical charts
 - Debt reduction tracking
 - Scenario planning

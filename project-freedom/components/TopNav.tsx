@@ -5,17 +5,18 @@ type TopNavItem = {
 
 const navItems: TopNavItem[] = [
   { href: "#overview", label: "Overview" },
-  { href: "#assets", label: "Assets" },
+  { href: "#assets", label: "Assets & Debts" },
   { href: "#lifestyle", label: "Retirement Plan" },
   { href: "#projection", label: "Projection" },
-  { href: "#check-in", label: "Check-In" },
+  { href: "#check-in", label: "Monthly Check-In" },
+  { href: "#history", label: "History" },
   { href: "#insights", label: "Insights" },
-  { href: "#definitions", label: "Definitions" },
+  { href: "#settings", label: "Settings" },
 ];
 
 export default function TopNav() {
   return (
-    <nav className="mt-8 rounded-3xl border border-slate-800/80 bg-slate-950/80 px-4 py-3 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
+    <nav aria-label="Primary navigation" className="mt-8 rounded-3xl border border-slate-800/80 bg-slate-950/80 px-4 py-3 shadow-xl shadow-slate-950/20 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-sm text-slate-300">
         {navItems.map((item) => (
           <a

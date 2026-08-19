@@ -13,28 +13,36 @@ export type AssetBase = {
 
 export type PensionItem = AssetBase & {
   type: "pension";
-  pensionType?: string; // workplace, private, SIPP, defined-benefit estimate
+  pensionType?: string;
+  employerName?: string;
 };
 
 export type InvestmentItem = AssetBase & {
   type: "investment";
-  accountType?: string; // ISA, GIA, etc.
+  accountType?: string;
+  provider?: string;
 };
 
 export type CashAccountItem = AssetBase & {
   type: "cash";
+  accountType?: string;
+  provider?: string;
 };
 
 export type DebtItem = AssetBase & {
   type: "debt";
+  debtType?: string;
   outstanding?: Money;
+  interestRate?: number;
   monthlyPayment?: Money;
 };
 
 export type PropertyItem = AssetBase & {
   type: "property";
+  propertyType?: string;
   outstandingMortgage?: Money;
   includeInInvestableWealth?: boolean;
+  isPrimaryResidence?: boolean;
   monthlyRentalIncome?: Money | null;
   monthlyCosts?: Money | null;
 };

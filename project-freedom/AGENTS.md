@@ -8,6 +8,7 @@ This repository is a small Next.js app for a personal finance dashboard. The mai
 - The main dashboard composition lives in [app/page.tsx](app/page.tsx). Reuse existing components from [components/](components/) before introducing new patterns.
 - Calculation and estimation logic should live in [lib/](lib/) rather than inside React components. The retirement estimate logic is currently in [lib/estimateFreedomDate.ts](lib/estimateFreedomDate.ts).
 - Styling uses Tailwind classes and the existing dark, dashboard-style UI. Match that visual tone and spacing when editing components.
+- The active dashboard still consumes the flat V1 `FinancialData` shape defined in [app/page.tsx](app/page.tsx); [types/financial.ts](types/financial.ts) and [lib/migrations/migrateToV2.ts](lib/migrations/migrateToV2.ts) describe a newer V2 collection model that is not yet the page's read format.
 
 ## Working conventions
 - Keep TypeScript types explicit and avoid adding dependencies unless they are clearly justified.
@@ -27,6 +28,7 @@ This repository is a small Next.js app for a personal finance dashboard. The mai
   ```
 - Use `useEffect` with state dependency to persist changes back to localStorage after each update.
 - Always check for `typeof window !== "undefined"` before accessing localStorage (SSR safety).
+- Treat parsed localStorage values as untrusted input: catch JSON errors and structurally validate arrays and objects before passing them to components; a TypeScript cast alone is not validation.
 
 ## Financial data patterns
 - All numeric inputs are sanitized with `sanitizeFinancialValue()` to prevent NaN or Infinity propagation:
@@ -42,7 +44,13 @@ This repository is a small Next.js app for a personal finance dashboard. The mai
 - **Build for production**: `npm run build`
 - **Run production build locally**: `npm run start`
 - **Lint code**: `npm run lint` (ESLint with Next.js TypeScript rules)
-- Run these commands when changing app behavior, adding logic, or before submitting changes.
+- There is currently no test script or test runner. Run `npm run lint && npm run build` when changing app behavior, adding logic, or before submitting changes.
+- For migration or persistence changes, also exercise representative legacy and malformed localStorage fixtures in the browser. Confirm that the value written by a migration is readable by the active page and that migration failure preserves usable legacy data.
+
+## Data-model and migration cautions
+- Do not change the `project-freedom-data` storage shape without updating both the reader in [app/page.tsx](app/page.tsx) and the migration in [lib/migrations/migrateToV2.ts](lib/migrations/migrateToV2.ts); the V1 and V2 shapes are currently incompatible when written under the same key.
+- Keep migrations idempotent and preserve user data on parse or storage failures. Avoid relying on random IDs or unchecked `any` values when extending migration behavior.
+- Monthly check-ins use a separate `project-freedom-monthly-check-ins` key and should remain compatible with [lib/monthlyCheckIns.ts](lib/monthlyCheckIns.ts).
 
 ## Useful references
 - [ROADMAP.md](ROADMAP.md) for product direction and principles
